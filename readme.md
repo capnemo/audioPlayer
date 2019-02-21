@@ -4,9 +4,9 @@ audioPlayer as the name suggests is a command line audio player for Linux. It pl
 
 Install and build
 -----------------
-Make sure all the dependencies in the dependencies section  are satisfied.
-Clone the repository to your machine.
-*cd  code_location*
+Make sure all the dependencies in the dependencies section  are satisfied.  
+Clone the repository to your machine.  
+*cd  code_location*  
 *make*
 
 Usage
