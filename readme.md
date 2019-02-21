@@ -4,20 +4,20 @@ audioPlayer as the name suggests is a command line audio player for Linux. It pl
 
 Install and build
 -----------------
-Make sure all the dependencies in the dependencies section  are satisfied.  
-Clone the repository to your machine.  
-*cd  code_location*  
-*make*
+* Make sure all the dependencies in the dependencies section  are satisfied.  
+* Clone the repository to your machine.  
+* *cd  code_location*  
+* *make*
 
 Usage
 -----
-After the code is built.
+After the code is built.  
 *./audioPlayer  fileName*
 
 Dependencies
 ------------
-FFmpeg version 4.0 or later.  
-libasound version 1.1.0 or later.  
-Clang ver 7.  
-Developed and tested on Ubuntu 18.10  
+* FFmpeg version 4.0 or later.  
+* libasound version 1.1.0 or later.  
+* Clang ver 7.  
+* Developed and tested on Ubuntu 18.10  
 
