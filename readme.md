@@ -12,7 +12,7 @@ Install and build
 Usage
 -----
 After the code is built.  
-*./audioPlayer  fileName*
+*./playAudio  fileName*
 
 Dependencies
 ------------
