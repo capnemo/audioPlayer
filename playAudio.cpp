@@ -12,7 +12,7 @@
 int main(int argc, char *argv[])
 {
     if (argc != 2) {
-        std::cout << "No File" << std::endl;
+        std::cout << "Usage: " << argv[0] << " <fileName>" << std::endl;
         return -1;
     }
 
