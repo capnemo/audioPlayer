@@ -4,6 +4,10 @@
 #include <sys/time.h>
 #include "audioPlayer.h"
 
+/*
+ * Initialize and open up the audio device.
+ */
+
 int audioPlayer::init()
 {
     AVSampleFormat inputSampleFormat, outputSampleFormat;
@@ -114,6 +118,11 @@ int audioPlayer::init()
     return 0;
 }
 
+/*
+ * Thread function that writes the decoded data to the audio device. 
+ * Also converts planar data to interleaved data. Useful for mp3.
+ */
+
 void audioPlayer::threadFunc()
 {
     beginClock = std::chrono::high_resolution_clock::now();
@@ -173,6 +182,10 @@ void audioPlayer::threadFunc()
     endClock = std::chrono::high_resolution_clock::now();
 }
 
+/*
+ * Destructor.
+ * Also prints out the time taken to play the stream
+ */
 audioPlayer::~audioPlayer()
 {
     snd_pcm_close(playbackHandle);

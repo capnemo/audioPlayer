@@ -1,8 +1,15 @@
+
+/* 
+ * Class to write a decoded audio stream to the audio device.
+*/
+
+
 extern "C" {
     #include <libavcodec/avcodec.h>
     #include <libswresample/swresample.h>
     #include <libavutil/opt.h>
 }
+
 
 #include <alsa/asoundlib.h>
 #include "threadRunner.h"

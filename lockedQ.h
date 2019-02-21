@@ -1,3 +1,7 @@
+/* 
+    A generic class that adds mutual exclusion to std::queue.
+*/
+
 #include <mutex>
 #include <condition_variable>
 #include <queue>

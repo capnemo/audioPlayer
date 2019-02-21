@@ -1,14 +1,13 @@
 #include <iostream>
-
 #include "streamInit.h"
 #include "reader.h"
 #include "audioPlayer.h"
 
-//TODO make sure all AV* data structures are released.
-//     Make sure all the destructors are active.
+/* 
+ * Entry point for the program. Takes in a file name and 
+ * writes to the audio stream to the default device.
+*/
 
-//void audio_callback(void *opaque, Uint8 *stream, int len);
-//One of the AV* structures is NOT thread safe!!
 int main(int argc, char *argv[])
 {
     if (argc != 2) {
@@ -21,6 +20,7 @@ int main(int argc, char *argv[])
         std::cout << "Error initializing.." << std::endl;
         return -1;
     }
+
     avStr.dump();
     AVFormatContext *formatCtx = avStr.getFormatContext();
     AVCodecContext* audioContext = avStr.getCodecContext();
@@ -42,7 +42,5 @@ int main(int argc, char *argv[])
     rt.joinThread();
 
     frameQ.printStats();
-/*
-*/
 }
 

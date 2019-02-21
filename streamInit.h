@@ -1,3 +1,10 @@
+/* 
+   Class to initialize FFmpeg data structures for use by the reader
+   and decoder.
+*/
+
+
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -16,7 +23,7 @@ class streamInit {
     int getAudioStreamIndex();
     AVCodec* getCodec();
     AVCodecContext* getCodecContext();
-    AVRational* getAudioTimeBase(); 
+    AVRational getAudioTimeBase(); 
     ~streamInit();
 
     private:

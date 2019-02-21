@@ -1,4 +1,8 @@
-#include <thread>
+/* 
+    Class to read and decode the audio stream
+*/
+
+
 extern "C" {
     #include <libavcodec/avcodec.h>
     #include <libavformat/avformat.h>
@@ -6,6 +10,8 @@ extern "C" {
 
 #include "lockedQ.h"
 #include "threadRunner.h"
+#include <thread>
+
 #ifndef READER_H
 #define READER_H
 

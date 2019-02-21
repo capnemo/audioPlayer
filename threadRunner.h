@@ -1,3 +1,6 @@
+/* 
+ * Base class to manage thread lifecycle.
+ */
 #include <thread>
 
 #ifndef THREADRUNNER_H

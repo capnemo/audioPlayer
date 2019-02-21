@@ -3,12 +3,18 @@
 #include "lockedQ.h"
 #include "streamInit.h"
 
+/*
+ *  Function to assert that the input is complete
+ */
 template <typename T>
 void lockedQ<T>::inputComplete()
 {
     complete = true;
 }
 
+/*
+ *  Add object n to the queue
+*/
 template <typename T>
 void lockedQ<T>::enQueue(T n)
 {
@@ -18,6 +24,9 @@ void lockedQ<T>::enQueue(T n)
     obIn++;
 }
 
+/*
+ *  return the object from the top of the queue
+*/
 template <typename T>
 T lockedQ<T>::deQueue()
 {
@@ -34,6 +43,11 @@ T lockedQ<T>::deQueue()
     return top;
 }
 
+/*
+ *  return true if there is no more input forthcoming and if the
+ *  queue is empty
+ */
+
 template <typename T>
 bool lockedQ<T>::terminateOutput()
 {
@@ -45,7 +59,9 @@ bool lockedQ<T>::terminateOutput()
     return false;
 }
 
-
+/*
+ *  print the number of object that have entered and exited the queue.
+ */
 template <typename T>
 void lockedQ<T>::printStats()
 {

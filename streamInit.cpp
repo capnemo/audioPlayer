@@ -1,6 +1,12 @@
 #include <iostream>
 #include "streamInit.h"
 
+/*
+   Initializes the audio stream from the input file and gets it ready
+   to be read. 
+   Initializes the formatContext and the audio codec for use
+   by the decoder. 
+*/
 
 int streamInit::init()
 {
@@ -38,36 +44,57 @@ int streamInit::init()
     return 0;
 }
 
+/* 
+    Writes out the stats of all the streams in the input file.
+*/
 void streamInit::dump()
 {
     av_dump_format(fmtCtx, audioIndex, inputFile, 0);
 }
 
+/*
+   returns the formatContext for the file.
+*/
 AVFormatContext* streamInit::getFormatContext()
 {
     return fmtCtx;
 }
 
+/*
+    returns the index of the audio stream from the demuxer.
+*/
 int streamInit::getAudioStreamIndex() 
 {
     return audioIndex;
 }
 
+/* 
+    returns the codec for the audio stream
+*/
 AVCodec* streamInit::getCodec() 
 {
     return audioCodec;
 }
 
+/*
+    returns the audio codec context.
+*/
 AVCodecContext* streamInit::getCodecContext() 
 {
     return cdcCtx;
 }
 
-AVRational* streamInit::getAudioTimeBase()  //Should not be a pointer!
+/* 
+    returns the audio time base. (inverse of the sampling frequency)
+*/
+AVRational streamInit::getAudioTimeBase()  //Should not be a pointer!
 { 
     return &audioTimeBase; 
 }
 
+/*
+    Destructor
+*/
 streamInit::~streamInit()
 {   
     avcodec_close(cdcCtx);

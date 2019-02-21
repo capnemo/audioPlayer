@@ -1,6 +1,8 @@
 #include <iostream>
 #include "reader.h"
-
+/*
+ * Thread function to read and decode the stream. 
+ */
 void reader::threadFunc()
 {
     int pRc = 0;
@@ -14,6 +16,9 @@ void reader::threadFunc()
     outQ.inputComplete();
 }
 
+/* 
+ * Decodes and writes a frame to the queue. Called from threadFunc
+ */
 void reader::decode(AVPacket* packet)
 {
     int fRc = avcodec_send_packet(cdcCtx, packet);
