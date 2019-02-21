@@ -1,17 +1,21 @@
-#Audio Player for Linux
-audioPlayer as the name suggests is a command line audio player for Linux. It plays all audio formats supported by FFmpeg. Unlike many other audio players, it does not change the sample format prior to playback. The code is structured as follows. There are 2 threads, the first one reads and decodes the audio stream from the  input file. The second thread writes the decoded data to libasound (alsa). The two threads communicate via a queue.
+Audio Player for Linux
+-----------------------
+audioPlayer as the name suggests is a command line audio player for Linux. It plays all audio formats supported by FFmpeg. Unlike many other audio players, it does not change the sample format prior to playback. The utility is structured as follows. There are 2 threads; the first one reads and decodes the audio stream from the  input file and the second thread writes the decoded data to libasound (alsa). The two threads communicate via a queue.
 
-##Install and build
+Install and build
+-----------------
 Make sure all the dependencies in the dependencies section  are satisfied.
 Clone the repository to your machine.
 *cd  code_location*
 *make*
 
-##Usage
+Usage
+-----
 After the code is built.
 *./audioPlayer  fileName*
 
-##Dependencies
+Dependencies
+------------
 FFmpeg version 4.0 or later.
 libasound version 1.1.0 or later.
 Clang ver 7.
