@@ -1,0 +1,4 @@
+
+Add delete to all classes to remove the copy constructor and
+assignment operator.
+

@@ -23,7 +23,9 @@ class audioPlayer:public threadRunner {
     public:
     audioPlayer(AVCodecContext* cdcCtx, lockedQ<AVFrame*>& fSrc):
                 audioCodecCtx(cdcCtx), frameSource(fSrc) {}
-
+        
+    audioPlayer(const audioPlayer&) = delete;
+    audioPlayer& operator = (const audioPlayer&) = delete;
     int init();
     void threadFunc();
     ~audioPlayer();

@@ -87,9 +87,9 @@ AVCodecContext* streamInit::getCodecContext()
 /* 
     returns the audio time base. (inverse of the sampling frequency)
 */
-AVRational streamInit::getAudioTimeBase()  //Should not be a pointer!
+AVRational streamInit::getAudioTimeBase()  
 { 
-    return &audioTimeBase; 
+    return audioTimeBase; 
 }
 
 /*

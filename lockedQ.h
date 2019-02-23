@@ -14,6 +14,9 @@ template <typename T>
 class lockedQ {
     public:
     lockedQ(std::string nm): qName(nm), complete(false) {}
+    lockedQ(const lockedQ&) = delete;
+    lockedQ& operator = (lockedQ&) = delete;
+
     void inputComplete();
     void enQueue(T n);
     T deQueue();

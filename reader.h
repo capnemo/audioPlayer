@@ -20,8 +20,11 @@ class reader:public threadRunner {
     reader(lockedQ<AVFrame*>& pQ, int aIn, AVFormatContext* fCtx,
            AVCodecContext* cCtx):
            outQ(pQ), audioIndex(aIn), fmtCtx(fCtx), cdcCtx(cCtx) {}
+    reader(const reader&) = delete;
+    reader& operator = (reader&) = delete;
 
     virtual void threadFunc();
+
     private:
     void decode(AVPacket* packet);
 

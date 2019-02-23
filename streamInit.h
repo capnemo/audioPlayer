@@ -16,9 +16,10 @@ extern "C" {
 class streamInit {
     public:
     streamInit(const char* fileName):inputFile(fileName)  {}
+    streamInit(const streamInit&) = delete;
+    streamInit& operator = (streamInit&) = delete;
     int init();
     void dump();
-
     AVFormatContext* getFormatContext();
     int getAudioStreamIndex();
     AVCodec* getCodec();
