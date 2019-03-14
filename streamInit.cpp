@@ -45,56 +45,66 @@ int streamInit::init()
 }
 
 /* 
-    Writes out the stats of all the streams in the input file.
-*/
+ *  Writes out the stats of all the streams in the input file.
+ *  To be redone. Print out just the audio clip stats. Maybe in another
+ *  function.
+ */
 void streamInit::dump()
 {
     av_dump_format(fmtCtx, audioIndex, inputFile, 0);
 }
 
 /*
-   returns the formatContext for the file.
-*/
+ *  returns the formatContext for the file.
+ */
 AVFormatContext* streamInit::getFormatContext()
 {
     return fmtCtx;
 }
 
 /*
-    returns the index of the audio stream from the demuxer.
-*/
+ *  returns the index of the audio stream from the demuxer.
+ */
 int streamInit::getAudioStreamIndex() 
 {
     return audioIndex;
 }
 
 /* 
-    returns the codec for the audio stream
-*/
+ *  returns the codec for the audio stream
+ */
 AVCodec* streamInit::getCodec() 
 {
     return audioCodec;
 }
 
 /*
-    returns the audio codec context.
-*/
+ *  returns the audio codec context.
+ */
 AVCodecContext* streamInit::getCodecContext() 
 {
     return cdcCtx;
 }
 
 /* 
-    returns the audio time base. (inverse of the sampling frequency)
-*/
+ *  returns the total number of samples in the audio clip
+ */
+int64_t streamInit::getNumSamplesInStream()
+{
+    return fmtCtx->streams[audioIndex]->duration;
+}
+
+/* 
+ *  returns the audio time base. (inverse of the sampling frequency)
+ */
 AVRational streamInit::getAudioTimeBase()  
 { 
     return audioTimeBase; 
 }
 
 /*
-    Destructor
-*/
+ *  Destructor
+ */
 streamInit::~streamInit()
 {   
     avcodec_close(cdcCtx);

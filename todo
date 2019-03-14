@@ -1,4 +1,10 @@
 
 Add delete to all classes to remove the copy constructor and
-assignment operator.
+assignment operator. Done.
+Add a call to lockedQ to accept a function pointer that will
+free the type. There should be a function to take the object of the
+type T back. Not the greatest design decision. But the alternative is 
+far more messy.
+Adding const to function declarations and function arguments.
+
 

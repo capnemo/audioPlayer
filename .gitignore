@@ -1,4 +1,5 @@
 playAudio
 1
 *.o
+.*swp
 dep

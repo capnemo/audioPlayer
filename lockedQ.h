@@ -10,6 +10,11 @@
 #ifndef LOCKEDQ_H
 #define LOCKEDQ_H
 
+typedef struct {
+    void* buffer;
+    int buffSz;
+} dataBuffer;
+
 template <typename T>
 class lockedQ {
     public:

@@ -1,7 +1,10 @@
 
 /* 
  * Class to write a decoded audio stream to the audio device.
-*/
+ * Used the ALSA api (libasound) to interface with the playback device
+ * If the input stream is planar, the stream is interleaved.
+ * The output stream to the plotter is always AV_SAMPLE_FMT_S16
+ */
 
 
 extern "C" {
@@ -11,36 +14,51 @@ extern "C" {
 }
 
 
+#include <chrono>
 #include <alsa/asoundlib.h>
 #include "threadRunner.h"
 #include "lockedQ.h"
-#include <chrono>
+#include "audioResampler.h"
+#include "xPlot.h"
 
 #ifndef AUDIOPLAYER_H
 #define AUDIOPLAYER_H
 
+using stdClock = std::chrono::high_resolution_clock;
 class audioPlayer:public threadRunner {
-    public:
-    audioPlayer(AVCodecContext* cdcCtx, lockedQ<AVFrame*>& fSrc):
-                audioCodecCtx(cdcCtx), frameSource(fSrc) {}
-        
+public:
+    audioPlayer(AVCodecContext* cdcCtx, int64_t tS, 
+                lockedQ<AVFrame*>& fSrc, bool pL = false):
+                audioCodecCtx(cdcCtx), totalSamples(tS), plot(pL), 
+                frameSource(fSrc) {}
+
     audioPlayer(const audioPlayer&) = delete;
     audioPlayer& operator = (const audioPlayer&) = delete;
+
     int init();
     void threadFunc();
     ~audioPlayer();
+ 
+private: 
+    bool resampleAudioData(SwrContext* resampleCtx, AVFrame* outputFrame,
+                           AVFrame* inputFrame, AVSampleFormat inFormat,
+                           AVSampleFormat outFormat);
 
-    private:
-    std::thread audioThread;
+private:
     snd_pcm_t *playbackHandle;
     uint32_t formatDivisor = 0;
     uint32_t frameCounter = 0;
     uint32_t totalData = 0;
     AVCodecContext* audioCodecCtx;
+    audioResampler* planarResampler = 0;
+    SwrContext* plotResCtx = 0;
+    xPlot* plotter = 0;
+    int64_t totalSamples;
+    bool plot;
+    AVSampleFormat inputSampleFormat, outputSampleFormat;
+    AVSampleFormat plotSampleFormat = AV_SAMPLE_FMT_S16;
+    stdClock::time_point beginClock, endClock;
     lockedQ<AVFrame*>& frameSource;
-    bool interleaved = true;
-    SwrContext* resCtx = 0;
-    std::chrono::high_resolution_clock::time_point beginClock, endClock;
 };
 
 #endif /*AUDIOPLAYER_H*/

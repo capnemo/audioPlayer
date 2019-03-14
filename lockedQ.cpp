@@ -69,4 +69,3 @@ void lockedQ<T>::printStats()
 }
 
 template class lockedQ<AVFrame*>;
-template class lockedQ<AVPacket*>;

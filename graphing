@@ -1,0 +1,9 @@
+
+a) The whole audio clip shall be graphed as the clip plays. 
+   This shall be accomplised by adding an output queue to the player. 
+   The graphing code shall consume that data from the queue.
+
+b) Another standalone utility shall take in an interval and graph only that
+   interval from the file. The interval can be the whole file. The interval
+   is expressed in terms of seconds.
+

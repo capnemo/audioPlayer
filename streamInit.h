@@ -25,6 +25,7 @@ class streamInit {
     AVCodec* getCodec();
     AVCodecContext* getCodecContext();
     AVRational getAudioTimeBase(); 
+    int64_t getNumSamplesInStream();
     ~streamInit();
 
     private:
@@ -35,6 +36,6 @@ class streamInit {
     AVCodec* audioCodec = 0;
     AVCodecContext* cdcCtx = 0;
     AVRational audioTimeBase;
-
+    //int64_t clipLength;
 };
 #endif /*STREAMINIT_H*/
