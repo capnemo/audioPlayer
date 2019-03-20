@@ -3,3 +3,6 @@ playAudio
 *.o
 .*swp
 dep
+clips
+todo
+graphing

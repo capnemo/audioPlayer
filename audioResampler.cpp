@@ -3,14 +3,19 @@
 
 bool audioResampler::init()
 {
-    resampleContext = swr_alloc_set_opts(nullptr,
-                                         codecContext->channel_layout,
+    channelLayout = codecContext->channel_layout;
+    if (channelLayout == 0) 
+        channelLayout = av_get_channel_layout_nb_channels(codecContext->channels);
+
+    resampleContext = swr_alloc_set_opts(nullptr, 
+                                         channelLayout,
                                          outputFormat, 
                                          codecContext->sample_rate,
-                                         codecContext->channel_layout,
+                                         channelLayout,
                                          inputFormat,
                                          codecContext->sample_rate, 0, 0);
 
+    
     if (resampleContext == 0) 
         return false;
 
@@ -25,17 +30,38 @@ bool audioResampler::resampleFrame(const AVFrame* inputFrame,
 {
     outputFrame->format = outputFormat;
     outputFrame->channel_layout = codecContext->channel_layout;
+    //outputFrame->channel_layout = channelLayout;
     outputFrame->sample_rate = codecContext->sample_rate;
 
     int cRc = swr_convert_frame(resampleContext, outputFrame, inputFrame);
     if (cRc != 0) {
-        av_frame_unref(outputFrame);
+        //av_frame_unref(outputFrame);
         char errBuf[100];
         av_strerror(cRc, errBuf, 100);
         std::cout << "Resample error: " << errBuf << std::endl;
         return false;
     }
     return true;
+}
+
+void* audioResampler::resampleData(const AVFrame* inputFrame)
+{   
+    uint8_t *outData;
+    if (av_samples_alloc(&outData, 0, codecContext->channels,
+                           inputFrame->nb_samples, 
+                           codecContext->sample_fmt, 0) < 0) {
+        std::cout << "Error allocating resampling frame" << std::endl;
+        return nullptr;
+    }
+ 
+    if (swr_convert(resampleContext, &outData, inputFrame->nb_samples, 
+                    (const uint8_t **)inputFrame->data, 
+                    inputFrame->nb_samples) < 0) {
+        std::cout << "Error converting frame" << std::endl;
+        av_freep(&outData);
+        return nullptr;
+    }
+    return (void *) outData;
 }
 
 audioResampler::~audioResampler()

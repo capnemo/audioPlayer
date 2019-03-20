@@ -12,6 +12,8 @@ void usage(const char* progName);
 
 int main(int argc, char *argv[])
 {
+ 
+#if 0
     if ((argc < 2) || (argc > 3)) {
         usage(argv[0]);
         return -1;
@@ -40,8 +42,14 @@ int main(int argc, char *argv[])
         usage(argv[0]);
         return -1;
     }
+#endif
 
-    streamInit avStr(argVec[fileNameIndex].c_str());
+    if (argc != 2) {
+        usage(argv[0]);
+        return -1;
+    }
+
+    streamInit avStr(argv[1]);
     if (avStr.init() != 0) {
         std::cout << "Error initializing.." << std::endl;
         return -1;
@@ -51,11 +59,10 @@ int main(int argc, char *argv[])
     AVFormatContext *formatCtx = avStr.getFormatContext();
     AVCodecContext* audioContext = avStr.getCodecContext();
     int audioIndex = avStr.getAudioStreamIndex();
-    int64_t totalSamples = avStr.getNumSamplesInStream();
     lockedQ<AVFrame*> frameQ("frame");
 
     reader rt(frameQ, audioIndex, formatCtx, audioContext);
-    audioPlayer at(audioContext, totalSamples, frameQ, plot);
+    audioPlayer at(audioContext, frameQ);
 
     if (at.init() != 0) {
         std::cout << "Error initializing audio player" << std::endl;
@@ -73,6 +80,5 @@ int main(int argc, char *argv[])
 
 void usage(const char* progName)
 {
-    std::cout << "Usage: " << progName << " <fileName> [-plot]" 
-    << std::endl;
+    std::cout << "Usage: " << progName << " <fileName>" << std::endl;
 }

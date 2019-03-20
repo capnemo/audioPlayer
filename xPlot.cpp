@@ -1,8 +1,20 @@
 #include <iostream>
+#include <vector>
 #include "xPlot.h"
 
 int xPlot::init()
 {
+    if (inputFormat != plotFormat) {
+        resampler = new audioResampler(codecCtx, inputFormat, plotFormat);
+        if (resampler == 0) 
+            return -1;
+        if (resampler->init() == false) {
+            delete resampler;
+            resampler = 0;
+            return -1;
+        }
+    }
+
     if ((display = XOpenDisplay(0)) == 0) 
         return -1;
     
@@ -19,7 +31,7 @@ int xPlot::init()
                                  0, 0, windowWidth, windowHeight, 1, 
                                  BlackPixel(display, screen), 
                                  WhitePixel(display, screen));
-    XSelectInput(display, window, ExposureMask | ButtonPressMask);
+    XSelectInput(display, window, ExposureMask);
 
     graphicsContext = XCreateGC(display, window, 0, &gcValues);
     XSetForeground(display, graphicsContext, BlackPixel(display, screen));
@@ -33,14 +45,16 @@ int xPlot::init()
         XNextEvent(display, &event);
     } while (event.type != Expose);
 
+    numChannels = codecCtx->channels;
     xAxisBegin = 10;
     xAxisEnd = windowWidth - 20;
     yAxisBegin = 10;
     yAxisEnd = windowHeight - 20;
+    yRange = yAxisEnd - yAxisBegin;
+    xRange = xAxisEnd - xAxisBegin;
     currentXPos = xAxisBegin;
-    samplesPerPixel = totalSamples/(numChannels * (yAxisEnd - yAxisBegin));
-    
     drawAxes();
+    
     return 0;
 }
 
@@ -60,52 +74,72 @@ void xPlot::drawAxes()
     XFlush(display);
 }
 
-void xPlot::plotData(short *inputBuffer, int inputBufferSize)
+
+void xPlot::plotData(const AVFrame* inFrame)
 {
-    static std::vector<std::vector<short>> channelVectors(numChannels);
-    
-    return;
-    for (int i = 0; i < inputBufferSize; i++) 
-        channelVectors[i%numChannels].push_back(inputBuffer[i]);
-    
-    std::vector<std::vector<int>> channelSums(numChannels);
-    for (int i = 0; i < channelVectors.size(); i++) {
-        int aveSamples = (channelVectors[i].size()/samplesPerPixel) 
-                         * samplesPerPixel;
-        int planarSum = 0;
-        for (int j = 0; j < aveSamples; j++) {
-            planarSum += channelVectors[i][j];
-            if (j%samplesPerPixel == 0) {
-                channelSums[i].push_back(planarSum);
-                planarSum = 0;
-            }
-        }
+    uint8_t* dataPtr = (uint8_t*)inFrame->data[0];
+    if (resampler != nullptr) {
+        dataPtr = (uint8_t *)resampler->resampleData(inFrame);
+        if (dataPtr == nullptr)
+            return;
     }
-    
-    for (int j = 0; j < channelSums[0].size(); j++) {
-        for (int i = 0; i < numChannels; i++) {
-            int avg = channelSums[i][j]/samplesPerPixel;
-            int point = ((avg + lowerBound)*yAxisEnd)/dataRange;
-            XDrawPoint(display, window, graphicsContext, currentXPos++, 
-            point + yAxisBegin - yAxisEnd);
+
+    static std::vector<std::vector<int>> sums(inFrame->channels);
+    int i = 0;
+    while (i  < inFrame->nb_samples * inFrame->channels) {
+        for (int j = 0; j < inFrame->channels; j++) 
+            sums[j].push_back(dataPtr[i + j]);
+        i += inFrame->channels;
+
+        if (sums[0].size() == szAvg) {
+            plotPoints(sums);
+            for (int k = 0; k < sums.size(); k++) 
+                sums[k].clear();
         }
     }
 }
 
-//ToBeRemoved.
-void xPlot::waitForUserInput()
+void xPlot::plotPoints(std::vector<std::vector<int>>& yVals)
 {
-    while (1) {
-        XNextEvent(display, &event);
-        switch (event.type) {
-            case Expose: 
-                 drawAxes();  
-                 break; /* Draw/re-draw everything */
-            case ButtonPress: 
-                 exit(0); 
-                 break; /* Quit on mouse button press */
-            default: break;
-        }
+    std::vector<int> aggregates(yVals.size(), 0);
+    
+    for (int i = 0; i < yVals.size(); i++) 
+        removeDuplicates(yVals[i]);
+
+    for (int i = 0; i < yVals.size(); i++) 
+        for (int j = 0; j < yVals[i].size(); j++) 
+            aggregates[i] += yVals[i][j];
+
+    for (int i = 0; i < aggregates.size(); i++)
+        aggregates[i] = (aggregates[i]/yVals[i].size()) + 0.5;
+
+    int xC = (currentXPos % xRange) + xAxisBegin;
+    for (int i = 0; i < aggregates.size(); i++)  {
+        int yC = yRange - aggregates[i];
+        XDrawPoint(display, window, graphicsContext, xC, yC);
+        std::cout << xC << "," << yC << std::endl;
     }
+    currentXPos++;
+    XFlush(display);
 }
 
+void xPlot::removeDuplicates(std::vector<int>& inVec)
+{
+    std::vector<int> tmp;
+    int i = 0;
+    while (i < inVec.size()) {
+        tmp.push_back(inVec[i]);
+        while ((tmp[tmp.size() - 1] == inVec[i]) && (i < inVec.size()))
+            i++;
+    }
+    inVec = tmp;
+}
+
+xPlot::~xPlot()
+{
+    if (resampler != 0)
+        delete resampler;
+    
+    //XDestroyWindow(display, window);
+    //XCloseDisplay(display);   
+}

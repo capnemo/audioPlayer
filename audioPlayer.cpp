@@ -13,6 +13,7 @@ int audioPlayer::init()
 {
     snd_pcm_format_t audioFormat;
     inputSampleFormat = audioCodecCtx->sample_fmt;
+    outputSampleFormat = inputSampleFormat;
     switch (audioCodecCtx->sample_fmt) {
         case AV_SAMPLE_FMT_NONE :
             audioFormat = SND_PCM_FORMAT_UNKNOWN;
@@ -20,7 +21,6 @@ int audioPlayer::init()
         case AV_SAMPLE_FMT_U8:
             audioFormat = SND_PCM_FORMAT_U8;
             formatDivisor = 1;
-            outputSampleFormat = AV_SAMPLE_FMT_U8;
             break;
         case AV_SAMPLE_FMT_U8P:
             audioFormat = SND_PCM_FORMAT_U8;
@@ -30,7 +30,6 @@ int audioPlayer::init()
         case AV_SAMPLE_FMT_S16:
             audioFormat = SND_PCM_FORMAT_S16_LE;
             formatDivisor = 2;
-            outputSampleFormat = AV_SAMPLE_FMT_S16;
             break;
         case AV_SAMPLE_FMT_S16P:
             audioFormat = SND_PCM_FORMAT_S16_LE;
@@ -40,17 +39,14 @@ int audioPlayer::init()
         case AV_SAMPLE_FMT_S32:
             audioFormat =  SND_PCM_FORMAT_S32_LE;
             formatDivisor = 4;
-            outputSampleFormat = AV_SAMPLE_FMT_S32;
             break;
         case AV_SAMPLE_FMT_S32P:
             audioFormat =  SND_PCM_FORMAT_S32_LE;
             formatDivisor = 4;
-            outputSampleFormat = AV_SAMPLE_FMT_S32;
             break;
         case AV_SAMPLE_FMT_FLT:
             audioFormat =  SND_PCM_FORMAT_FLOAT;
             formatDivisor = 4;
-            outputSampleFormat = AV_SAMPLE_FMT_FLT;
             break;
         case AV_SAMPLE_FMT_FLTP:
             audioFormat =  SND_PCM_FORMAT_FLOAT;
@@ -60,12 +56,10 @@ int audioPlayer::init()
         case AV_SAMPLE_FMT_DBL:
             audioFormat =  SND_PCM_FORMAT_FLOAT64;
             formatDivisor = 8;
-            outputSampleFormat = AV_SAMPLE_FMT_DBL;
             break;
         case AV_SAMPLE_FMT_DBLP:
             audioFormat =  SND_PCM_FORMAT_FLOAT64;
             formatDivisor = 8;
-            outputSampleFormat = AV_SAMPLE_FMT_DBL;
             break;
         default:
             audioFormat = SND_PCM_FORMAT_UNKNOWN;
@@ -84,27 +78,12 @@ int audioPlayer::init()
     }
     
     if (plot == true) {
-        plotter = new xPlot(audioCodecCtx->channels, totalSamples);
+        plotter = new xPlot(audioCodecCtx, outputSampleFormat);
         if ((plotter != 0) && (plotter->init() == -1))  {
             plot = false;
             delete plotter;
         }
     }
-
-#if 0
-    if ((plot == true) && (outputSampleFormat != plotSampleFormat)) {
-        plotResCtx = swr_alloc_set_opts(0, audioCodecCtx->channel_layout,
-                                        plotSampleFormat, 
-                                        audioCodecCtx->sample_rate,
-                                        audioCodecCtx->channel_layout,
-                                        outputSampleFormat,
-                                        audioCodecCtx->sample_rate,
-                                        0, 0);
-        if (plotResCtx != 0)  
-            if (swr_init(plotResCtx) != 0) 
-                plot = false;
-    }
-#endif
 
     if (snd_pcm_open(&playbackHandle, "default", 
                        SND_PCM_STREAM_PLAYBACK, 0) < 0) {
@@ -115,7 +94,7 @@ int audioPlayer::init()
     int err;
     err = snd_pcm_set_params(playbackHandle, audioFormat,
                              SND_PCM_ACCESS_RW_INTERLEAVED,
-                             audioCodecCtx->channels, 
+                             audioCodecCtx->channels,
                              audioCodecCtx->sample_rate, 0, 500000);
     if (err < 0)
         return -1;
@@ -175,34 +154,8 @@ void audioPlayer::threadFunc()
         }
 
         if (plot == true)
-            plotter->plotData((short *)plotInputFrame->data[0], plotDataSz);
+            plotter->plotData(plotInputFrame);
             
-            
-#if 0
-        if (snd_pcm_writei(playbackHandle, samples, dataSz) < 0) {
-            std::cout << "Error on snd_pcm_write" << std::endl;
-            if (snd_pcm_prepare(playbackHandle) < 0) {
-                std::cout << "Cannot recover from write error" 
-                << std::endl;
-                fatalError = true;
-            }
-        }
-
-        AVFrame plotFrame;
-        if ((plot == true) && (outputSampleFormat != plotSampleFormat)) {
-            if (resampleAudioData(plotResCtx, &plotFrame, plotInputFrame,
-                         outputSampleFormat, plotSampleFormat) == true) 
-                plotInputFrame = &plotFrame;
-            else 
-                plot = false;
-        }
- 
-        if (plot == true) {
-            int plotDataSz = (dataSz * formatDivisor)/sizeof(short);
-            plotter->plotData((short *)plotInputFrame->data[0], plotDataSz);
-        }
-        av_frame_unref(&plotFrame);
-#endif
         av_frame_unref(&resFrame);
         av_frame_unref(frame);
         av_frame_free(&frame);

@@ -3,6 +3,8 @@ extern "C" {
     #include <libswresample/swresample.h>
 }
 
+#ifndef AUDIORESAMPLER_H
+#define AUDIORESAMPLER_H
 
 class audioResampler {
     public:
@@ -16,11 +18,14 @@ class audioResampler {
 
     bool init();
     bool resampleFrame(const AVFrame* inputFrame, AVFrame *outputFrame);
+    void* resampleData(const AVFrame* inputFrame);
     ~audioResampler();
 
     private:
     const AVCodecContext* codecContext;
     AVSampleFormat inputFormat, outputFormat;
     SwrContext* resampleContext = 0;
+    int channelLayout;
 };
 
+#endif /* AUDIORESAMPLER_H */
