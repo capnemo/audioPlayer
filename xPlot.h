@@ -1,4 +1,5 @@
 #include <limits>
+#include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,8 +16,9 @@
 class xPlot{
 public:
     //xPlot(int nC, int tS):numChannels(nC), totalSamples(tS),cdcCtx(0) {}
-    xPlot(AVCodecContext* cT, AVSampleFormat iF):
-          codecCtx(cT), inputFormat(iF) {}
+    xPlot(AVCodecContext* cT, AVSampleFormat iF, int tS, int sR):
+          codecCtx(cT), inputFormat(iF), totalSamples(tS), 
+          samplingRate(sR) {}
 
     int init();
     void plotData(short* buffer, int buffSize);
@@ -25,9 +27,13 @@ public:
 
 private:
     void drawAxes();
+    void graphData();
     void plotPoints(std::vector<std::vector<int>>& yVals);
     void removeDuplicates(std::vector<int>& inVec);
-
+    int avgUnique(const std::vector<short>& input);
+    void plotFull();
+    void plotStream();
+    void appendData(const AVFrame* inFrame);
 
 private:
     Display *display = 0;
@@ -40,13 +46,18 @@ private:
     int yRange, xRange;
     int currentXPos = 0;
     int szAvg = 100;
-    //int samplesPerPixel;
     int numChannels;
-    //long totalSamples;
-    audioResampler* resampler;
+    int samplesPerPoint;
+    int dataRange;
+    audioResampler* resampler = nullptr;
+    std::vector<long> lineColors;
     const AVCodecContext* codecCtx;
     AVSampleFormat inputFormat;
-    AVSampleFormat plotFormat = AV_SAMPLE_FMT_U8;
+    AVSampleFormat plotFormat = AV_SAMPLE_FMT_S16;
+    long totalSamples;
+    int samplingRate;
+    std::vector<std::vector<short>> planarData;
+    std::vector<std::vector<short>> points;
 };
 
 #endif /*XPLOT_H*/

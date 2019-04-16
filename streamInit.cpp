@@ -27,11 +27,13 @@ int streamInit::init()
     if (audioIndex == -1)
         return -3;
 
+    audioStream = fmtCtx->streams[audioIndex];
     codecPar = fmtCtx->streams[audioIndex]->codecpar;
     audioCodec = avcodec_find_decoder(codecPar->codec_id);
     if (audioCodec == 0)
         return -4;
-
+    
+    samplingRate = codecPar->sample_rate;
     cdcCtx = avcodec_alloc_context3(audioCodec);
     avcodec_parameters_to_context(cdcCtx, codecPar);
     
@@ -91,7 +93,8 @@ AVCodecContext* streamInit::getCodecContext()
  */
 int64_t streamInit::getNumSamplesInStream()
 {
-    return fmtCtx->streams[audioIndex]->duration;
+    return (fmtCtx->streams[audioIndex]->duration * audioTimeBase.num * 
+            samplingRate) / audioTimeBase.den;
 }
 
 /* 
@@ -100,6 +103,11 @@ int64_t streamInit::getNumSamplesInStream()
 AVRational streamInit::getAudioTimeBase()  
 { 
     return audioTimeBase; 
+}
+
+int streamInit::getSamplingRate()
+{
+    return samplingRate;
 }
 
 /*

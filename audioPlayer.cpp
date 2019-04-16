@@ -78,7 +78,8 @@ int audioPlayer::init()
     }
     
     if (plot == true) {
-        plotter = new xPlot(audioCodecCtx, outputSampleFormat);
+        plotter = new xPlot(audioCodecCtx, outputSampleFormat, 
+                            totalSamples, samplingRate);
         if ((plotter != 0) && (plotter->init() == -1))  {
             plot = false;
             delete plotter;
@@ -128,12 +129,16 @@ void audioPlayer::threadFunc()
         void* samples = frame->data[0];
         AVFrame* plotInputFrame = frame;
         if (planarResampler != 0) {
+            bzero((void *)&resFrame, sizeof(resFrame));
             if (planarResampler->resampleFrame(frame, &resFrame) == true) {
                 samples = (void *)resFrame.data[0];
                 plotInputFrame = &resFrame;
             } else 
                 continue;
         }
+
+        if (plot == true)
+            plotter->plotData(plotInputFrame);
 
         int wRc = snd_pcm_writei(playbackHandle, samples, dataSz);
         if (wRc == -EPIPE) {
@@ -153,10 +158,9 @@ void audioPlayer::threadFunc()
             }
         }
 
-        if (plot == true)
-            plotter->plotData(plotInputFrame);
-            
-        av_frame_unref(&resFrame);
+        if (planarResampler != 0)  
+            av_frame_unref(&resFrame);
+
         av_frame_unref(frame);
         av_frame_free(&frame);
         if (fatalError == true)
@@ -165,7 +169,6 @@ void audioPlayer::threadFunc()
 
     if (fatalError == false)
         snd_pcm_drain(playbackHandle);
-
     endClock = stdClock::now();
 }
 

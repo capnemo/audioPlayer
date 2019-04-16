@@ -19,6 +19,7 @@ class audioResampler {
     bool init();
     bool resampleFrame(const AVFrame* inputFrame, AVFrame *outputFrame);
     void* resampleData(const AVFrame* inputFrame);
+    bool flushable();
     ~audioResampler();
 
     private:

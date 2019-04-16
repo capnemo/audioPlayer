@@ -26,15 +26,18 @@ class streamInit {
     AVCodecContext* getCodecContext();
     AVRational getAudioTimeBase(); 
     int64_t getNumSamplesInStream();
+    int getSamplingRate();
     ~streamInit();
 
     private:
     const char* inputFile;
     AVFormatContext* fmtCtx = 0;
     int audioIndex = -1;
+    int samplingRate;
     AVCodecParameters* codecPar = 0;
     AVCodec* audioCodec = 0;
     AVCodecContext* cdcCtx = 0;
+    AVStream* audioStream;
     AVRational audioTimeBase;
     //int64_t clipLength;
 };

@@ -7,5 +7,6 @@ type T back. Not the greatest design decision. But the alternative is
 far more messy.
 Adding const to function declarations and function arguments.
 Valgrind with the plot option turned on.
+Use cstdint type Everywhere
 
 

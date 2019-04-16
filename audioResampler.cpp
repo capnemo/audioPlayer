@@ -44,8 +44,29 @@ bool audioResampler::resampleFrame(const AVFrame* inputFrame,
     return true;
 }
 
+bool audioResampler::flushable() 
+{
+    if (swr_get_delay(resampleContext, codecContext->sample_rate) != 0)
+        return true;
+    return false; 
+}
+
+#if 0
+bool audioResampler::flush()
+{
+    int cRc = swr_convert_frame(resampleContext, outputFrame, 0);
+    if (cRc != 0) {
+        //av_frame_unref(outputFrame);
+        char errBuf[100];
+        av_strerror(cRc, errBuf, 100);
+        std::cout << "Resample error: " << errBuf << std::endl;
+        return false;
+    }
+}
+#endif
+
 void* audioResampler::resampleData(const AVFrame* inputFrame)
-{   
+{
     uint8_t *outData;
     if (av_samples_alloc(&outData, 0, codecContext->channels,
                            inputFrame->nb_samples, 
@@ -54,6 +75,16 @@ void* audioResampler::resampleData(const AVFrame* inputFrame)
         return nullptr;
     }
  
+    int cRC = swr_convert(resampleContext, &outData, inputFrame->nb_samples, 
+                          (const uint8_t **)inputFrame->data, 
+                           inputFrame->nb_samples);
+    std::cout << "SWR Convert " << cRC << std::endl;
+    if (cRC <= 0) {
+        std::cout << "Error converting frame" << std::endl;
+        av_freep(&outData);
+        return nullptr;
+    }
+    /*
     if (swr_convert(resampleContext, &outData, inputFrame->nb_samples, 
                     (const uint8_t **)inputFrame->data, 
                     inputFrame->nb_samples) < 0) {
@@ -61,6 +92,7 @@ void* audioResampler::resampleData(const AVFrame* inputFrame)
         av_freep(&outData);
         return nullptr;
     }
+    */
     return (void *) outData;
 }
 

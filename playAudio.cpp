@@ -62,7 +62,8 @@ int main(int argc, char *argv[])
     lockedQ<AVFrame*> frameQ("frame");
 
     reader rt(frameQ, audioIndex, formatCtx, audioContext);
-    audioPlayer at(audioContext, frameQ);
+    audioPlayer at(audioContext, avStr.getNumSamplesInStream(), 
+                   avStr.getSamplingRate(), frameQ, true);
 
     if (at.init() != 0) {
         std::cout << "Error initializing audio player" << std::endl;

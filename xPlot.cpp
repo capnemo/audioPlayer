@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <set>
+#include <thread>
 #include "xPlot.h"
 
 int xPlot::init()
@@ -15,10 +17,36 @@ int xPlot::init()
         }
     }
 
+    numChannels = codecCtx->channels;
+    for (int i = 0; i < numChannels; i++)  {
+        planarData.push_back(std::vector<short>());
+        points.push_back(std::vector<short>());
+    }
+
     if ((display = XOpenDisplay(0)) == 0) 
         return -1;
     
     screen = DefaultScreen(display);
+    Colormap screenColorMap = DefaultColormap(display, screen);
+    std::vector<std::string> colors = {"red","blue","green","yellow","white"};
+
+/*
+    for (auto col:colors) {
+        XColor sCol;
+        int rc = XParseColor(display, screenColorMap, col.c_str(), &sCol);
+        if (rc != 0) 
+            lineColors.push_back(sCol.pixel);
+    }
+*/
+    for (auto col:colors) {
+        XColor sCol;
+        int rc = XAllocNamedColor(display, screenColorMap, col.c_str(), &sCol, 
+                                  &sCol);
+        if (rc != 0) 
+            lineColors.push_back(sCol.pixel);
+    }
+
+
     Screen* scrn = ScreenOfDisplay(display, screen);
     int screenWidth = scrn->width;
     int screenHeight = scrn->height;
@@ -27,17 +55,17 @@ int xPlot::init()
     
     int windowWidth = screenWidth - 0.2 * screenWidth;
     int windowHeight = screenHeight * 0.33;
+
     window = XCreateSimpleWindow(display, RootWindow(display, screen),
-                                 0, 0, windowWidth, windowHeight, 1, 
-                                 BlackPixel(display, screen), 
-                                 WhitePixel(display, screen));
+                                0, 0, windowWidth, windowHeight, 1, 0,
+                                BlackPixel(display, screen));
+
     XSelectInput(display, window, ExposureMask);
 
     graphicsContext = XCreateGC(display, window, 0, &gcValues);
-    XSetForeground(display, graphicsContext, BlackPixel(display, screen));
-    XSetBackground(display, graphicsContext, WhitePixel(display, screen));
     XSetLineAttributes(display, graphicsContext, 1, LineSolid, CapRound,
                        JoinRound);
+
     XMapWindow(display, window);
 
     XEvent event;
@@ -45,7 +73,6 @@ int xPlot::init()
         XNextEvent(display, &event);
     } while (event.type != Expose);
 
-    numChannels = codecCtx->channels;
     xAxisBegin = 10;
     xAxisEnd = windowWidth - 20;
     yAxisBegin = 10;
@@ -53,6 +80,9 @@ int xPlot::init()
     yRange = yAxisEnd - yAxisBegin;
     xRange = xAxisEnd - xAxisBegin;
     currentXPos = xAxisBegin;
+    samplesPerPoint = totalSamples/(xRange * numChannels);
+    dataRange = std::numeric_limits<short>::max() 
+                - std::numeric_limits<short>::min();
     drawAxes();
     
     return 0;
@@ -60,6 +90,7 @@ int xPlot::init()
 
 void xPlot::drawAxes() 
 {
+    XSetForeground(display, graphicsContext, WhitePixel(display, screen));
     XDrawLine(display, window, graphicsContext, xAxisBegin, yAxisBegin, 
               xAxisBegin, yAxisEnd);
     XDrawLine(display, window, graphicsContext, xAxisBegin, yAxisEnd,
@@ -77,27 +108,197 @@ void xPlot::drawAxes()
 
 void xPlot::plotData(const AVFrame* inFrame)
 {
-    uint8_t* dataPtr = (uint8_t*)inFrame->data[0];
+    #if 0
     if (resampler != nullptr) {
-        dataPtr = (uint8_t *)resampler->resampleData(inFrame);
+        std::cout << "Before Resample." << std::endl;
+        dataPtr = (short*)resampler->resampleData(inFrame);
         if (dataPtr == nullptr)
             return;
     }
+    std::cout << "after Resample." << std::endl;
+    #endif
+    
+    AVFrame plotFrame;
+    if (resampler != nullptr) {
+        bzero((void *)&plotFrame, sizeof(AVFrame));
+        if (resampler->resampleFrame(inFrame, &plotFrame) == true)  {
+            appendData(&plotFrame);
+            av_frame_unref(&plotFrame);
+            while (resampler->flushable() == true) {
+                std::cout << "AAA" << std::endl;
+                bzero((void *)&plotFrame, sizeof(AVFrame));
+                resampler->resampleFrame(nullptr, &plotFrame);
+                appendData(&plotFrame);
+                av_frame_unref(&plotFrame);
+            }
+        } else  {
+            std::cout << "Plot resample fail" << std::endl;
+            return;
+        }
+    } else {
+        appendData(inFrame);
+    }
 
-    static std::vector<std::vector<int>> sums(inFrame->channels);
-    int i = 0;
-    while (i  < inFrame->nb_samples * inFrame->channels) {
-        for (int j = 0; j < inFrame->channels; j++) 
-            sums[j].push_back(dataPtr[i + j]);
-        i += inFrame->channels;
+    //Are we sure that the length in the frame is for all channels 
+    // and not for each channel?  ALSA defines a frame as a set of 
+    // samples for all channels, whereas FFMPEG an audio frame
+    // is a set of samples for a certain time period for all channels.
+    //There is a chance that inFrame->nb_channels != numChannels.
+    
+    if (planarData[0].size() < samplesPerPoint)
+        return;
 
-        if (sums[0].size() == szAvg) {
-            plotPoints(sums);
-            for (int k = 0; k < sums.size(); k++) 
-                sums[k].clear();
+    plotFull();
+    //plotStream(); 
+}
+
+void xPlot::appendData(const AVFrame* inFrame)
+{
+    static int cumTotalSamples = 0;
+    short* dataPtr = (short *)(inFrame->data[0]);
+    for (int i = 0; i < inFrame->nb_samples * numChannels; i++) 
+        planarData[i%numChannels].push_back(dataPtr[i]);
+
+    std::cout << "**" << inFrame->nb_samples << "**" << std::endl;
+    for (auto p:planarData) 
+        std::cout << "!!" << p.size() << "!!" << std::endl;
+    cumTotalSamples += inFrame->nb_samples;
+    std::cout << "##" << cumTotalSamples << std::endl;
+}
+
+/* This barely works!! To Be Qualified */
+void xPlot::plotStream()
+{
+    for (int i = 0; i < planarData.size(); i++) 
+        for (int j = 0; j < planarData[i].size(); j++) 
+            planarData[i][j] = yRange/2 - (planarData[i][j] * yRange)/dataRange;
+    
+    int leftSegment = xRange/5;
+    do {
+        int currX = 0;
+        for (int i = 0; i < planarData.size(); i++) {
+            currX = currentXPos;
+            XSetForeground(display, graphicsContext, lineColors[i]);
+            for (int j = 0; j < planarData[i].size() ;j++) {
+                XDrawLine(display, window, graphicsContext, 
+                          currX, planarData[i][j], 
+                          currX + 1, planarData[i][j + 1]);
+                currX++;
+                if (currX >= xAxisEnd)  
+                    break;
+            }
+        }
+        XFlush(display);
+        
+        for (int i = 0; i < planarData.size(); i++) {
+            if (planarData[i].size() > xRange/5) {
+                std::vector<short>::iterator itB = planarData[i].begin();
+                std::vector<short>::iterator itE = itB + leftSegment;
+                planarData[i].erase(itB, itE);
+            }
+        }
+    
+        int displayDelay = (leftSegment*1000)/samplingRate;
+        std::this_thread::sleep_for(std::chrono::milliseconds(displayDelay));
+        XClearWindow(display, window);
+        drawAxes();
+        
+        currentXPos = currX;
+        if (currX == xAxisEnd) 
+            currentXPos = xAxisBegin;
+    } while (planarData[0].size() > xRange);
+}
+
+void xPlot::plotFull()
+{
+
+    for (int i = 0; i < planarData.size(); i++) {
+        std::vector<short> subset;
+        for (int j = 0; j < planarData[i].size(); j++) {
+            subset.push_back(planarData[i][j]);
+            if (subset.size() == samplesPerPoint) {
+                int avg = avgUnique(subset);
+                int y = yRange/2 - (avg * yRange)/dataRange;
+                points[i].push_back(y);
+                subset.clear();
+            }
+        }
+
+        if (subset.size() != 0) {
+            int y = yRange/2 -(avgUnique(subset) * yRange)/dataRange;
+            points[i].push_back(y);
         }
     }
+
+    for (int i = 0; i < planarData.size(); i++) 
+        planarData[i].clear();
+    
+    //Cannot delete members of a 2d vector in a for(auto...) loop.
+    //Why?
+    graphData();
 }
+
+
+void xPlot::graphData()
+{   
+    int currX = 0;
+    for (int i = 0; i < points.size(); i++) {
+        currX = currentXPos;
+        XSetForeground(display, graphicsContext, lineColors[i]);
+        for (int j = 1; j < points[i].size(); j++) {
+
+            XDrawLine(display, window, graphicsContext,
+                      currX, points[i][j - 1], currX + 1, points[i][j]);
+
+            std::cout << currX << "," << points[i][j - 1] << "," << 
+                         currX + 1 << "," << points[i][j] << std::endl;
+
+            currX++;
+        }
+    }
+    currentXPos = currX;
+    XFlush(display);
+    
+    for (int i = 0; i < points.size(); i++)
+        points[i].erase(points[i].begin(), points[i].end() - 1);
+}
+
+int xPlot::avgUnique(const std::vector<short>& input)
+{
+    int max = std::abs(input[0]);
+    int index = 0;
+    for (int i = 0; i < input.size(); i++) {
+        if (max < std::abs(input[i])) {
+            index = i;
+            max = std::abs(input[i]);
+        }
+    }
+
+/*
+    std::cout << (int)input[index] << "|";
+    for (auto m:input)
+        std::cout << m << ",";
+    std::cout << std::endl;
+*/
+
+    return (int)input[index];
+}
+
+#if 0
+int xPlot::avgUnique(const std::vector<short>& input)
+{
+    
+    std::set<short> uniques;
+    for (auto m:input) 
+        uniques.insert(m);
+    
+    int avg = 0;
+    for (auto u:uniques)
+        avg += u;
+
+    return avg/(int)uniques.size();
+}
+#endif
 
 void xPlot::plotPoints(std::vector<std::vector<int>>& yVals)
 {
@@ -139,7 +340,8 @@ xPlot::~xPlot()
 {
     if (resampler != 0)
         delete resampler;
-    
-    //XDestroyWindow(display, window);
-    //XCloseDisplay(display);   
+ 
+    XFreeGC(display, graphicsContext);   
+    XDestroyWindow(display, window);
+    XCloseDisplay(display);   
 }

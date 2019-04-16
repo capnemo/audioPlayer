@@ -27,9 +27,10 @@ extern "C" {
 using stdClock = std::chrono::high_resolution_clock;
 class audioPlayer:public threadRunner {
 public:
-    audioPlayer(AVCodecContext* cdcCtx, lockedQ<AVFrame*>& fSrc, 
-                bool pL = false):
-                audioCodecCtx(cdcCtx), plot(pL), frameSource(fSrc) {}
+    audioPlayer(AVCodecContext* cdcCtx, int64_t tS, int sR,
+                lockedQ<AVFrame*>& fSrc, bool pL = false):
+                audioCodecCtx(cdcCtx), plot(pL), totalSamples(tS), 
+                samplingRate(sR), frameSource(fSrc) {}
 
     audioPlayer(const audioPlayer&) = delete;
     audioPlayer& operator = (const audioPlayer&) = delete;
@@ -53,6 +54,8 @@ private:
     SwrContext* plotResCtx = 0;
     xPlot* plotter = 0;
     bool plot;
+    int64_t totalSamples;
+    int samplingRate;
     AVSampleFormat inputSampleFormat, outputSampleFormat;
     stdClock::time_point beginClock, endClock;
     lockedQ<AVFrame*>& frameSource;
