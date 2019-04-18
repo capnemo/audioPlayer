@@ -18,11 +18,6 @@ int xPlot::init()
     }
 
     numChannels = codecCtx->channels;
-    for (int i = 0; i < numChannels; i++)  {
-        planarData.push_back(std::vector<short>());
-        points.push_back(std::vector<short>());
-    }
-
     if ((display = XOpenDisplay(0)) == 0) 
         return -1;
     
@@ -79,8 +74,14 @@ int xPlot::init()
     yAxisEnd = windowHeight - 20;
     yRange = yAxisEnd - yAxisBegin;
     xRange = xAxisEnd - xAxisBegin;
+    for (int i = 0; i < numChannels; i++)  {
+        planarData.push_back(std::vector<short>());
+        points.push_back(std::vector<short>());
+        xCoord.push_back(xAxisBegin);
+        yCoord.push_back(yRange/2);
+    }
     currentXPos = xAxisBegin;
-    samplesPerPoint = totalSamples/(xRange * numChannels);
+    samplesPerPoint = (totalSamples/(double)xRange) + 0.5;
     dataRange = std::numeric_limits<short>::max() 
                 - std::numeric_limits<short>::min();
     drawAxes();
@@ -108,18 +109,8 @@ void xPlot::drawAxes()
 
 void xPlot::plotData(const AVFrame* inFrame)
 {
-    #if 0
     if (resampler != nullptr) {
-        std::cout << "Before Resample." << std::endl;
-        dataPtr = (short*)resampler->resampleData(inFrame);
-        if (dataPtr == nullptr)
-            return;
-    }
-    std::cout << "after Resample." << std::endl;
-    #endif
-    
-    AVFrame plotFrame;
-    if (resampler != nullptr) {
+        AVFrame plotFrame;
         bzero((void *)&plotFrame, sizeof(AVFrame));
         if (resampler->resampleFrame(inFrame, &plotFrame) == true)  {
             appendData(&plotFrame);
@@ -139,11 +130,6 @@ void xPlot::plotData(const AVFrame* inFrame)
         appendData(inFrame);
     }
 
-    //Are we sure that the length in the frame is for all channels 
-    // and not for each channel?  ALSA defines a frame as a set of 
-    // samples for all channels, whereas FFMPEG an audio frame
-    // is a set of samples for a certain time period for all channels.
-    //There is a chance that inFrame->nb_channels != numChannels.
     
     if (planarData[0].size() < samplesPerPoint)
         return;
@@ -152,6 +138,31 @@ void xPlot::plotData(const AVFrame* inFrame)
     //plotStream(); 
 }
 
+void xPlot::appendData(const AVFrame* inFrame)
+{
+    short* dataPtr = (short *)(inFrame->data[0]);
+    for (int i = 0; i < inFrame->nb_samples * numChannels; i++) {
+        planarData[i%numChannels].push_back(dataPtr[i]);
+        if (planarData[i%numChannels].size() == samplesPerPoint) {
+            int avg = avgUnique(planarData[i%numChannels]);
+            int y = yRange/2 - (avg * yRange)/dataRange;
+            plotLine(i%numChannels, y);
+            planarData[i%numChannels].clear();
+        }
+    }
+}
+
+void xPlot::plotLine(int channel, int currentY)
+{
+    XSetForeground(display, graphicsContext, lineColors[channel]);
+    XDrawLine(display, window, graphicsContext, 
+              xCoord[channel], yCoord[channel], xCoord[channel] + 1, currentY);
+    xCoord[channel]++;
+    yCoord[channel] = currentY;
+    XFlush(display);
+}
+
+#if 0
 void xPlot::appendData(const AVFrame* inFrame)
 {
     static int cumTotalSamples = 0;
@@ -165,7 +176,7 @@ void xPlot::appendData(const AVFrame* inFrame)
     cumTotalSamples += inFrame->nb_samples;
     std::cout << "##" << cumTotalSamples << std::endl;
 }
-
+#endif
 /* This barely works!! To Be Qualified */
 void xPlot::plotStream()
 {
@@ -212,26 +223,41 @@ void xPlot::plotStream()
 void xPlot::plotFull()
 {
 
+    int transferredPoints = 0;
     for (int i = 0; i < planarData.size(); i++) {
         std::vector<short> subset;
         for (int j = 0; j < planarData[i].size(); j++) {
             subset.push_back(planarData[i][j]);
             if (subset.size() == samplesPerPoint) {
+                transferredPoints++;
                 int avg = avgUnique(subset);
                 int y = yRange/2 - (avg * yRange)/dataRange;
                 points[i].push_back(y);
                 subset.clear();
             }
         }
-
+/*
         if (subset.size() != 0) {
             int y = yRange/2 -(avgUnique(subset) * yRange)/dataRange;
             points[i].push_back(y);
         }
+*/
+    }
+    
+    transferredPoints *= samplesPerPoint;
+    transferredPoints /= numChannels;
+    
+    using planeIter = std::vector<short>::iterator;   
+    for (int i = 0; i < planarData.size(); i++) {
+        planeIter rB = planarData[i].begin();
+        planeIter rE = planarData[i].begin() + transferredPoints;
+        planarData[i].erase(rB, rE);
     }
 
+/*
     for (int i = 0; i < planarData.size(); i++) 
         planarData[i].clear();
+*/
     
     //Cannot delete members of a 2d vector in a for(auto...) loop.
     //Why?
@@ -249,9 +275,10 @@ void xPlot::graphData()
 
             XDrawLine(display, window, graphicsContext,
                       currX, points[i][j - 1], currX + 1, points[i][j]);
-
+#if 0
             std::cout << currX << "," << points[i][j - 1] << "," << 
                          currX + 1 << "," << points[i][j] << std::endl;
+#endif
 
             currX++;
         }

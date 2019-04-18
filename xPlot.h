@@ -29,6 +29,7 @@ private:
     void drawAxes();
     void graphData();
     void plotPoints(std::vector<std::vector<int>>& yVals);
+    void plotLine(int channel, int currentY);
     void removeDuplicates(std::vector<int>& inVec);
     int avgUnique(const std::vector<short>& input);
     void plotFull();
@@ -49,6 +50,8 @@ private:
     int numChannels;
     int samplesPerPoint;
     int dataRange;
+    std::vector<short> xCoord;
+    std::vector<short> yCoord;
     audioResampler* resampler = nullptr;
     std::vector<long> lineColors;
     const AVCodecContext* codecCtx;
