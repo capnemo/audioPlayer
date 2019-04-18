@@ -25,14 +25,6 @@ int xPlot::init()
     Colormap screenColorMap = DefaultColormap(display, screen);
     std::vector<std::string> colors = {"red","blue","green","yellow","white"};
 
-/*
-    for (auto col:colors) {
-        XColor sCol;
-        int rc = XParseColor(display, screenColorMap, col.c_str(), &sCol);
-        if (rc != 0) 
-            lineColors.push_back(sCol.pixel);
-    }
-*/
     for (auto col:colors) {
         XColor sCol;
         int rc = XAllocNamedColor(display, screenColorMap, col.c_str(), &sCol, 
@@ -106,7 +98,7 @@ void xPlot::drawAxes()
     XFlush(display);
 }
 
-
+//Called from outside.
 void xPlot::plotData(const AVFrame* inFrame)
 {
     if (resampler != nullptr) {
@@ -129,13 +121,6 @@ void xPlot::plotData(const AVFrame* inFrame)
     } else {
         appendData(inFrame);
     }
-
-    
-    if (planarData[0].size() < samplesPerPoint)
-        return;
-
-    plotFull();
-    //plotStream(); 
 }
 
 void xPlot::appendData(const AVFrame* inFrame)
@@ -162,21 +147,6 @@ void xPlot::plotLine(int channel, int currentY)
     XFlush(display);
 }
 
-#if 0
-void xPlot::appendData(const AVFrame* inFrame)
-{
-    static int cumTotalSamples = 0;
-    short* dataPtr = (short *)(inFrame->data[0]);
-    for (int i = 0; i < inFrame->nb_samples * numChannels; i++) 
-        planarData[i%numChannels].push_back(dataPtr[i]);
-
-    std::cout << "**" << inFrame->nb_samples << "**" << std::endl;
-    for (auto p:planarData) 
-        std::cout << "!!" << p.size() << "!!" << std::endl;
-    cumTotalSamples += inFrame->nb_samples;
-    std::cout << "##" << cumTotalSamples << std::endl;
-}
-#endif
 /* This barely works!! To Be Qualified */
 void xPlot::plotStream()
 {
@@ -220,76 +190,6 @@ void xPlot::plotStream()
     } while (planarData[0].size() > xRange);
 }
 
-void xPlot::plotFull()
-{
-
-    int transferredPoints = 0;
-    for (int i = 0; i < planarData.size(); i++) {
-        std::vector<short> subset;
-        for (int j = 0; j < planarData[i].size(); j++) {
-            subset.push_back(planarData[i][j]);
-            if (subset.size() == samplesPerPoint) {
-                transferredPoints++;
-                int avg = avgUnique(subset);
-                int y = yRange/2 - (avg * yRange)/dataRange;
-                points[i].push_back(y);
-                subset.clear();
-            }
-        }
-/*
-        if (subset.size() != 0) {
-            int y = yRange/2 -(avgUnique(subset) * yRange)/dataRange;
-            points[i].push_back(y);
-        }
-*/
-    }
-    
-    transferredPoints *= samplesPerPoint;
-    transferredPoints /= numChannels;
-    
-    using planeIter = std::vector<short>::iterator;   
-    for (int i = 0; i < planarData.size(); i++) {
-        planeIter rB = planarData[i].begin();
-        planeIter rE = planarData[i].begin() + transferredPoints;
-        planarData[i].erase(rB, rE);
-    }
-
-/*
-    for (int i = 0; i < planarData.size(); i++) 
-        planarData[i].clear();
-*/
-    
-    //Cannot delete members of a 2d vector in a for(auto...) loop.
-    //Why?
-    graphData();
-}
-
-
-void xPlot::graphData()
-{   
-    int currX = 0;
-    for (int i = 0; i < points.size(); i++) {
-        currX = currentXPos;
-        XSetForeground(display, graphicsContext, lineColors[i]);
-        for (int j = 1; j < points[i].size(); j++) {
-
-            XDrawLine(display, window, graphicsContext,
-                      currX, points[i][j - 1], currX + 1, points[i][j]);
-#if 0
-            std::cout << currX << "," << points[i][j - 1] << "," << 
-                         currX + 1 << "," << points[i][j] << std::endl;
-#endif
-
-            currX++;
-        }
-    }
-    currentXPos = currX;
-    XFlush(display);
-    
-    for (int i = 0; i < points.size(); i++)
-        points[i].erase(points[i].begin(), points[i].end() - 1);
-}
-
 int xPlot::avgUnique(const std::vector<short>& input)
 {
     int max = std::abs(input[0]);
@@ -300,18 +200,10 @@ int xPlot::avgUnique(const std::vector<short>& input)
             max = std::abs(input[i]);
         }
     }
-
-/*
-    std::cout << (int)input[index] << "|";
-    for (auto m:input)
-        std::cout << m << ",";
-    std::cout << std::endl;
-*/
-
     return (int)input[index];
 }
 
-#if 0
+#if 0 //Keep this!!!
 int xPlot::avgUnique(const std::vector<short>& input)
 {
     
@@ -326,30 +218,6 @@ int xPlot::avgUnique(const std::vector<short>& input)
     return avg/(int)uniques.size();
 }
 #endif
-
-void xPlot::plotPoints(std::vector<std::vector<int>>& yVals)
-{
-    std::vector<int> aggregates(yVals.size(), 0);
-    
-    for (int i = 0; i < yVals.size(); i++) 
-        removeDuplicates(yVals[i]);
-
-    for (int i = 0; i < yVals.size(); i++) 
-        for (int j = 0; j < yVals[i].size(); j++) 
-            aggregates[i] += yVals[i][j];
-
-    for (int i = 0; i < aggregates.size(); i++)
-        aggregates[i] = (aggregates[i]/yVals[i].size()) + 0.5;
-
-    int xC = (currentXPos % xRange) + xAxisBegin;
-    for (int i = 0; i < aggregates.size(); i++)  {
-        int yC = yRange - aggregates[i];
-        XDrawPoint(display, window, graphicsContext, xC, yC);
-        std::cout << xC << "," << yC << std::endl;
-    }
-    currentXPos++;
-    XFlush(display);
-}
 
 void xPlot::removeDuplicates(std::vector<int>& inVec)
 {

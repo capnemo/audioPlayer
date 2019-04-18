@@ -21,18 +21,14 @@ public:
           samplingRate(sR) {}
 
     int init();
-    void plotData(short* buffer, int buffSize);
     void plotData(const AVFrame* inFrame);
     ~xPlot();
 
 private:
     void drawAxes();
-    void graphData();
-    void plotPoints(std::vector<std::vector<int>>& yVals);
     void plotLine(int channel, int currentY);
     void removeDuplicates(std::vector<int>& inVec);
     int avgUnique(const std::vector<short>& input);
-    void plotFull();
     void plotStream();
     void appendData(const AVFrame* inFrame);
 
@@ -46,7 +42,6 @@ private:
     int yAxisBegin, yAxisEnd;
     int yRange, xRange;
     int currentXPos = 0;
-    int szAvg = 100;
     int numChannels;
     int samplesPerPoint;
     int dataRange;
