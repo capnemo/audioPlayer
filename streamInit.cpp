@@ -8,13 +8,17 @@
    by the decoder. 
 */
 
-int streamInit::init()
+bool streamInit::init()
 {
-    if (avformat_open_input(&fmtCtx, inputFile, 0, 0) != 0) 
-        return -1;
+    if (avformat_open_input(&fmtCtx, inputFile, 0, 0) != 0) {
+        std::cout << "Error opening file" << std::endl;
+        return false;
+    }
 
-    if (avformat_find_stream_info(fmtCtx, 0) < 0) 
-        return -2;
+    if (avformat_find_stream_info(fmtCtx, 0) < 0) {
+        std::cout << "Error getting header info." << std::endl;
+        return false;
+    }
 
     for (int i = 0; i < fmtCtx->nb_streams; i++) {
         if (fmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -24,42 +28,54 @@ int streamInit::init()
         }
     }
 
-    if (audioIndex == -1)
-        return -3;
+    if (audioIndex == -1) {
+        std::cout << "Error finding the audio stream" << std::endl;
+        return false;
+    }
 
     audioStream = fmtCtx->streams[audioIndex];
     codecPar = fmtCtx->streams[audioIndex]->codecpar;
     audioCodec = avcodec_find_decoder(codecPar->codec_id);
-    if (audioCodec == 0)
-        return -4;
-    
+    if (audioCodec == 0) {
+        std::cout << "Error finding the audio codec" << std::endl;
+        return false;
+    }
+
     samplingRate = codecPar->sample_rate;
+    totalSamples = (fmtCtx->streams[audioIndex]->duration * audioTimeBase.num * 
+                    samplingRate) / audioTimeBase.den;
+    
     cdcCtx = avcodec_alloc_context3(audioCodec);
     avcodec_parameters_to_context(cdcCtx, codecPar);
     
     if (avcodec_open2(cdcCtx, audioCodec, 0) < 0) {
         avcodec_free_context(&cdcCtx);
         cdcCtx = 0; 
-        return -5;
+        std::cout << "Error opening the audio codec" << std::endl;
+        return false;
     }
     
-    return 0;
+    return true;
 }
 
 /* 
- *  Writes out the stats of all the streams in the input file.
- *  To be redone. Print out just the audio clip stats. Maybe in another
- *  function.
+ *  Print out audio stream stats. Maybe in another function.
  */
-void streamInit::dump()
+
+void streamInit::dump() const
 {
-    av_dump_format(fmtCtx, audioIndex, inputFile, 0);
+    std::cout << "File name: " << inputFile << std::endl;
+    std::cout << "No. of streams in clip: " << fmtCtx->nb_streams << std::endl;
+    std::cout << "Number of channels in the audio stream: " 
+              << cdcCtx->channels << std::endl;
+    std::cout << "Sampling Rate: " << samplingRate << std::endl;
+    std::cout << "Samples per channel: " << totalSamples << std::endl;
 }
 
 /*
  *  returns the formatContext for the file.
  */
-AVFormatContext* streamInit::getFormatContext()
+AVFormatContext* streamInit::getFormatContext() const
 {
     return fmtCtx;
 }
@@ -67,7 +83,7 @@ AVFormatContext* streamInit::getFormatContext()
 /*
  *  returns the index of the audio stream from the demuxer.
  */
-int streamInit::getAudioStreamIndex() 
+std::uint32_t streamInit::getAudioStreamIndex() const
 {
     return audioIndex;
 }
@@ -75,7 +91,7 @@ int streamInit::getAudioStreamIndex()
 /* 
  *  returns the codec for the audio stream
  */
-AVCodec* streamInit::getCodec() 
+AVCodec* streamInit::getCodec() const
 {
     return audioCodec;
 }
@@ -83,7 +99,7 @@ AVCodec* streamInit::getCodec()
 /*
  *  returns the audio codec context.
  */
-AVCodecContext* streamInit::getCodecContext() 
+AVCodecContext* streamInit::getCodecContext() const
 {
     return cdcCtx;
 }
@@ -91,21 +107,20 @@ AVCodecContext* streamInit::getCodecContext()
 /* 
  *  returns the total number of samples in the audio clip
  */
-int64_t streamInit::getNumSamplesInStream()
+std::uint64_t streamInit::getNumSamplesInStream() const
 {
-    return (fmtCtx->streams[audioIndex]->duration * audioTimeBase.num * 
-            samplingRate) / audioTimeBase.den;
+    return totalSamples;
 }
 
 /* 
  *  returns the audio time base. (inverse of the sampling frequency)
  */
-AVRational streamInit::getAudioTimeBase()  
+AVRational streamInit::getAudioTimeBase() const
 { 
     return audioTimeBase; 
 }
 
-int streamInit::getSamplingRate()
+std::uint32_t streamInit::getSamplingRate() const
 {
     return samplingRate;
 }

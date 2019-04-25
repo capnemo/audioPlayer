@@ -8,5 +8,5 @@ far more messy.
 Adding const to function declarations and function arguments.
 Valgrind with the plot option turned on.
 Use cstdint type Everywhere
-
+init should return bool. Not int.
 

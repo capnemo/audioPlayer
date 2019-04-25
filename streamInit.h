@@ -18,27 +18,27 @@ class streamInit {
     streamInit(const char* fileName):inputFile(fileName)  {}
     streamInit(const streamInit&) = delete;
     streamInit& operator = (streamInit&) = delete;
-    int init();
-    void dump();
-    AVFormatContext* getFormatContext();
-    int getAudioStreamIndex();
-    AVCodec* getCodec();
-    AVCodecContext* getCodecContext();
-    AVRational getAudioTimeBase(); 
-    int64_t getNumSamplesInStream();
-    int getSamplingRate();
+    bool init();
+    void dump() const;
+    AVFormatContext* getFormatContext() const;
+    std::uint32_t getAudioStreamIndex() const;
+    AVCodec* getCodec() const;
+    AVCodecContext* getCodecContext() const;
+    AVRational getAudioTimeBase() const; 
+    std::uint64_t getNumSamplesInStream() const;
+    std::uint32_t getSamplingRate() const;
     ~streamInit();
 
     private:
     const char* inputFile;
     AVFormatContext* fmtCtx = 0;
-    int audioIndex = -1;
-    int samplingRate;
+    std::uint32_t audioIndex = -1;
+    std::uint32_t samplingRate;
+    std::uint64_t totalSamples = 0;
     AVCodecParameters* codecPar = 0;
     AVCodec* audioCodec = 0;
     AVCodecContext* cdcCtx = 0;
     AVStream* audioStream;
     AVRational audioTimeBase;
-    //int64_t clipLength;
 };
 #endif /*STREAMINIT_H*/

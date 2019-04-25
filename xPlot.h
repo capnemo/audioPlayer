@@ -1,5 +1,6 @@
 #include <limits>
 #include <chrono>
+#include <cstdint>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,36 +16,36 @@
 
 class xPlot{
 public:
-    //xPlot(int nC, int tS):numChannels(nC), totalSamples(tS),cdcCtx(0) {}
-    xPlot(AVCodecContext* cT, AVSampleFormat iF, int tS, int sR):
+    xPlot(AVCodecContext* cT, AVSampleFormat iF, std::uint64_t tS, 
+          std::uint32_t sR):
           codecCtx(cT), inputFormat(iF), totalSamples(tS), 
           samplingRate(sR) {}
 
-    int init();
+    bool init();
     void plotData(const AVFrame* inFrame);
     ~xPlot();
 
 private:
-    void drawAxes();
-    void plotLine(int channel, int currentY);
-    void removeDuplicates(std::vector<int>& inVec);
-    int avgUnique(const std::vector<short>& input);
+    void drawAxes() const;
+    void plotLine(std::uint32_t channel, std::int32_t currentY);
+    void removeDuplicates(std::vector<std::int32_t>& inVec);
+    std::int16_t maxAggregate(const std::vector<std::int16_t>& input) const;
     void plotStream();
     void appendData(const AVFrame* inFrame);
 
 private:
     Display *display = 0;
-    int screen;        
+    std::int32_t screen;        
     Window window;        
     GC graphicsContext;
     XGCValues gcValues;
-    int xAxisBegin, xAxisEnd;
-    int yAxisBegin, yAxisEnd;
-    int yRange, xRange;
-    int currentXPos = 0;
-    int numChannels;
-    int samplesPerPoint;
-    int dataRange;
+    std::uint32_t xAxisBegin, xAxisEnd;
+    std::uint32_t yAxisBegin, yAxisEnd;
+    std::uint32_t yRange, xRange;
+    std::uint32_t currentXPos = 0;
+    std::uint32_t numChannels;
+    std::uint32_t samplesPerPoint;
+    std::uint32_t dataRange;
     std::vector<short> xCoord;
     std::vector<short> yCoord;
     audioResampler* resampler = nullptr;
@@ -52,10 +53,10 @@ private:
     const AVCodecContext* codecCtx;
     AVSampleFormat inputFormat;
     AVSampleFormat plotFormat = AV_SAMPLE_FMT_S16;
-    long totalSamples;
-    int samplingRate;
-    std::vector<std::vector<short>> planarData;
-    std::vector<std::vector<short>> points;
+    std::uint64_t totalSamples;
+    std::uint32_t samplingRate;
+    std::vector<std::vector<std::int16_t>> planarData;
+    std::vector<std::vector<std::int16_t>> points;
 };
 
 #endif /*XPLOT_H*/

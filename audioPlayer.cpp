@@ -9,7 +9,7 @@
  * Initialize and open up the audio device.
  */
 
-int audioPlayer::init()
+bool audioPlayer::init()
 {
     snd_pcm_format_t audioFormat;
     inputSampleFormat = audioCodecCtx->sample_fmt;
@@ -66,7 +66,7 @@ int audioPlayer::init()
     }
 
     if (audioFormat == SND_PCM_FORMAT_UNKNOWN)
-        return  -1; 
+        return  false; 
 
     formatDivisor *= audioCodecCtx->channels;
     if (inputSampleFormat != outputSampleFormat)  {
@@ -80,16 +80,17 @@ int audioPlayer::init()
     if (plot == true) {
         plotter = new xPlot(audioCodecCtx, outputSampleFormat, 
                             totalSamples, samplingRate);
-        if ((plotter != 0) && (plotter->init() == -1))  {
+        if ((plotter != 0) && (plotter->init() == false))  {
             plot = false;
             delete plotter;
+            std::cout << "Error initializing plotter for graph" << std::endl;
         }
     }
 
     if (snd_pcm_open(&playbackHandle, "default", 
                        SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-         std::cout << "Error opening the audio device" << std::endl;
-        return -1;
+        std::cout << "Error opening the audio device" << std::endl;
+        return false;
     }
 
     int err;
@@ -98,9 +99,9 @@ int audioPlayer::init()
                              audioCodecCtx->channels,
                              audioCodecCtx->sample_rate, 0, 500000);
     if (err < 0)
-        return -1;
+        return false;
 
-    return 0;
+    return true;
 }
 
 /*
@@ -175,6 +176,7 @@ void audioPlayer::threadFunc()
 /*  
  * Resample the audio frame from the input format to the output format.
  */
+#if 0
 bool audioPlayer::resampleAudioData(SwrContext* resampleCtx, 
                                     AVFrame* outputFrame,
                                     AVFrame* inputFrame,
@@ -195,6 +197,7 @@ bool audioPlayer::resampleAudioData(SwrContext* resampleCtx,
     }
     return true;
 }
+#endif
 
 /*
  * Destructor.

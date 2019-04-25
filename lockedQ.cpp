@@ -63,7 +63,7 @@ bool lockedQ<T>::terminateOutput()
  *  print the number of object that have entered and exited the queue.
  */
 template <typename T>
-void lockedQ<T>::printStats()
+void lockedQ<T>::printStats() const
 {
     std::cout << qName << " In " << obIn << " Out " << obOut << std::endl;
 }

@@ -27,7 +27,7 @@ extern "C" {
 using stdClock = std::chrono::high_resolution_clock;
 class audioPlayer:public threadRunner {
 public:
-    audioPlayer(AVCodecContext* cdcCtx, int64_t tS, int sR,
+    audioPlayer(AVCodecContext* cdcCtx, int64_t tS, std::uint32_t sR,
                 lockedQ<AVFrame*>& fSrc, bool pL = false):
                 audioCodecCtx(cdcCtx), plot(pL), totalSamples(tS), 
                 samplingRate(sR), frameSource(fSrc) {}
@@ -35,27 +35,22 @@ public:
     audioPlayer(const audioPlayer&) = delete;
     audioPlayer& operator = (const audioPlayer&) = delete;
 
-    int init();
+    bool init();
     void threadFunc();
     ~audioPlayer();
  
-private: 
-    bool resampleAudioData(SwrContext* resampleCtx, AVFrame* outputFrame,
-                           AVFrame* inputFrame, AVSampleFormat inFormat,
-                           AVSampleFormat outFormat);
-
 private:
     snd_pcm_t *playbackHandle;
-    uint32_t formatDivisor = 0;
-    uint32_t frameCounter = 0;
-    uint32_t totalData = 0;
+    std::uint32_t formatDivisor = 0;
+    std::uint32_t frameCounter = 0;
+    std::uint32_t totalData = 0;
     AVCodecContext* audioCodecCtx;
     audioResampler* planarResampler = 0;
     SwrContext* plotResCtx = 0;
     xPlot* plotter = 0;
     bool plot;
-    int64_t totalSamples;
-    int samplingRate;
+    std::uint64_t totalSamples;
+    std::uint32_t samplingRate;
     AVSampleFormat inputSampleFormat, outputSampleFormat;
     stdClock::time_point beginClock, endClock;
     lockedQ<AVFrame*>& frameSource;

@@ -1,3 +1,5 @@
+#include <cstdint>
+
 extern "C" {
     #include <libavcodec/avcodec.h>
     #include <libswresample/swresample.h>
@@ -26,7 +28,7 @@ class audioResampler {
     const AVCodecContext* codecContext;
     AVSampleFormat inputFormat, outputFormat;
     SwrContext* resampleContext = 0;
-    int channelLayout;
+    std::uint32_t channelLayout;
 };
 
 #endif /* AUDIORESAMPLER_H */

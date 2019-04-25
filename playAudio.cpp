@@ -12,60 +12,56 @@ void usage(const char* progName);
 
 int main(int argc, char *argv[])
 {
- 
-#if 0
-    if ((argc < 2) || (argc > 3)) {
+    if ((argc < 2) || (argc > 4)) {
         usage(argv[0]);
         return -1;
     }
-
-    bool plot = false;
-    std::vector<std::string> argVec;
-    for (int i = 1; i < argc; i++) 
-        argVec.push_back(argv[i]);
     
-    int fileNameIndex = -1;
-    if (argVec.size() == 1) {
-        if (argVec[0] == "-plot")
-            fileNameIndex = -1;
-        else
-            fileNameIndex = 0;
-    } else if (argVec.size() == 2) {
-        plot = true;
-        if (argVec[0] == "-plot")
-            fileNameIndex = 1;
-        else if (argVec[1] == "-plot")
-            fileNameIndex = 0;
+    std::string fileName = "";
+    std::string plotArg = "-plot";
+    std::string dumpArg = "-dump";
+    bool plot = false;
+    bool dump = false;
+    std::uint32_t argsProcessed = 0;
+    for (int i = 1; i < argc; i++) {
+        if (argv[i] == plotArg)  {
+            plot = true;
+            argsProcessed++;
+        } else if (argv[i] == dumpArg) {
+            dump = true;
+            argsProcessed++;
+        } else {
+            if (fileName == "") {
+                fileName = argv[i];
+                argsProcessed++;
+            }
+        }
     }
-        
-    if (fileNameIndex == -1) {
-        usage(argv[0]);
-        return -1;
-    }
-#endif
-
-    if (argc != 2) {
+    
+    if ((fileName == "") || (argsProcessed != argc - 1)) {
         usage(argv[0]);
         return -1;
     }
 
     streamInit avStr(argv[1]);
-    if (avStr.init() != 0) {
+    if (avStr.init() == false) {
         std::cout << "Error initializing.." << std::endl;
         return -1;
     }
 
-    avStr.dump();
+    if (dump == true)
+        avStr.dump();
+
     AVFormatContext *formatCtx = avStr.getFormatContext();
     AVCodecContext* audioContext = avStr.getCodecContext();
-    int audioIndex = avStr.getAudioStreamIndex();
+    std::uint32_t audioIndex = avStr.getAudioStreamIndex();
     lockedQ<AVFrame*> frameQ("frame");
 
     reader rt(frameQ, audioIndex, formatCtx, audioContext);
     audioPlayer at(audioContext, avStr.getNumSamplesInStream(), 
-                   avStr.getSamplingRate(), frameQ, true);
+                   avStr.getSamplingRate(), frameQ, plot);
 
-    if (at.init() != 0) {
+    if (at.init() == false) {
         std::cout << "Error initializing audio player" << std::endl;
         return -1;
     }
@@ -82,5 +78,6 @@ int main(int argc, char *argv[])
 
 void usage(const char* progName)
 {
-    std::cout << "Usage: " << progName << " <fileName>" << std::endl;
+    std::cout << "Usage: " << progName << " <fileName> " << "[-dump] "
+              << "[-plot]" << std::endl;
 }

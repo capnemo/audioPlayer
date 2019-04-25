@@ -10,11 +10,6 @@
 #ifndef LOCKEDQ_H
 #define LOCKEDQ_H
 
-typedef struct {
-    void* buffer;
-    int buffSz;
-} dataBuffer;
-
 template <typename T>
 class lockedQ {
     public:
@@ -26,7 +21,7 @@ class lockedQ {
     void enQueue(T n);
     T deQueue();
     bool terminateOutput();
-    void printStats();
+    void printStats() const;
 
     private:
     std::queue<T> objQ;
