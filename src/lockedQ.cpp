@@ -18,11 +18,9 @@ void lockedQ<T>::inputComplete()
 template <typename T>
 void lockedQ<T>::enQueue(T n)
 {
-    std::cout << "Q" << *n << std::endl;
     std::unique_lock<std::mutex> qLck(qMtx);
     objQ.push(n);
     qCond.notify_one();
-    std::cout << "Sz " << objQ.size() << std::endl;
     obIn++;
 }
 
@@ -42,7 +40,6 @@ T lockedQ<T>::deQueue()
         objQ.pop();
     }
     obOut++;
-    std::cout << "Sx " << objQ.size() << std::endl;
     return top;
 }
 
