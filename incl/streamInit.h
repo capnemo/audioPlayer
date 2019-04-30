@@ -18,6 +18,7 @@ class streamInit {
     streamInit(const char* fileName):inputFile(fileName)  {}
     streamInit(const streamInit&) = delete;
     streamInit& operator = (streamInit&) = delete;
+
     bool init();
     void dump() const;
     AVFormatContext* getFormatContext() const;
@@ -28,6 +29,9 @@ class streamInit {
     std::uint64_t getNumSamplesInStream() const;
     std::uint32_t getSamplingRate() const;
     ~streamInit();
+
+    private:
+    void getSampleFormat(std::string& format) const;
 
     private:
     const char* inputFile;

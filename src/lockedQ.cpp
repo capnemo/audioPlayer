@@ -68,6 +68,6 @@ void lockedQ<T>::printStats() const
     std::cout << qName << " In " << obIn << " Out " << obOut << std::endl;
 }
 
-//template class lockedQ<AVFrame*>;
+template class lockedQ<AVFrame*>;
 template class lockedQ<int*>;
-//template class lockedQ<std::string>;
+template class lockedQ<std::string>;

@@ -49,8 +49,10 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    if (dump == true)
+    if (dump == true) {
         avStr.dump();
+        return 0;
+    }
 
     AVFormatContext *formatCtx = avStr.getFormatContext();
     AVCodecContext* audioContext = avStr.getCodecContext();
@@ -74,6 +76,7 @@ int main(int argc, char *argv[])
     rt.joinThread();
 
     frameQ.printStats();
+    return 0;
 }
 
 void usage(const char* progName)

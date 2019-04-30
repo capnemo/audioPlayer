@@ -70,6 +70,9 @@ void streamInit::dump() const
               << cdcCtx->channels << std::endl;
     std::cout << "Sampling Rate: " << samplingRate << std::endl;
     std::cout << "Samples per channel: " << totalSamples << std::endl;
+    std::string fmt;
+    getSampleFormat(fmt);
+    std::cout << "Sample Format: " << fmt << std::endl;
 }
 
 /*
@@ -124,6 +127,56 @@ std::uint32_t streamInit::getSamplingRate() const
 {
     return samplingRate;
 }
+
+void streamInit::getSampleFormat(std::string& format) const
+{
+
+    switch (cdcCtx->sample_fmt) {
+        case AV_SAMPLE_FMT_NONE :
+            format = "Unknown";
+            break;
+        case AV_SAMPLE_FMT_U8:
+            format = "Unsigned 8 bit packed";
+            break;
+        case AV_SAMPLE_FMT_U8P:
+            format = "Unsigned 8 bit planar";
+            break;
+        case AV_SAMPLE_FMT_S16:
+            format = "Signed 16 bit packed";
+            break;
+        case AV_SAMPLE_FMT_S16P:
+            format = "Signed 16 bit planar";
+            break;
+        case AV_SAMPLE_FMT_S32:
+            format = "Signed 32 bit packed";
+            break;
+        case AV_SAMPLE_FMT_S32P:
+            format = "Signed 32 bit planar";
+            break;
+        case AV_SAMPLE_FMT_FLT:
+            format = "Floating point packed";
+            break;
+        case AV_SAMPLE_FMT_FLTP:
+            format = "Floating point planar";
+            break;
+        case AV_SAMPLE_FMT_DBL:
+            format = "Double precision packed";
+            break;
+        case AV_SAMPLE_FMT_DBLP:
+            format = "Double precision planar";
+            break;
+        case AV_SAMPLE_FMT_S64:
+            format = "Signed 64 bit packed";
+            break;
+        case AV_SAMPLE_FMT_S64P:
+            format = "Signed 64 bit planar";
+            break;
+        default:
+            format = "Unknown";
+            break;
+    }
+}
+
 
 /*
  *  Destructor
