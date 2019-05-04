@@ -10,4 +10,4 @@ decodeTest:$(decSrcs)
 	$(CC) -I../incl/ $(decSrcs) -o $@ $(libs)
  	
 clean:
-	rm -f qTest *.o
+	rm -f qTest decodeTest *.o
