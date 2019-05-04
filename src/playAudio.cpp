@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    streamInit avStr(argv[1]);
+    streamInit avStr(fileName.c_str());
     if (avStr.init() == false) {
         std::cout << "Error initializing.." << std::endl;
         return -1;
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     rt.startThread();
     at.startThread();
 
-    sleep(10);
+    sleep(2);
     at.joinThread();
     rt.joinThread();
 

@@ -47,6 +47,7 @@ bool streamInit::init()
     
     cdcCtx = avcodec_alloc_context3(audioCodec);
     avcodec_parameters_to_context(cdcCtx, codecPar);
+    extractSampleFormat();
     
     if (avcodec_open2(cdcCtx, audioCodec, 0) < 0) {
         avcodec_free_context(&cdcCtx);
@@ -54,6 +55,9 @@ bool streamInit::init()
         std::cout << "Error opening the audio codec" << std::endl;
         return false;
     }
+    
+    numChannels = fmtCtx->nb_streams;
+    numStreams = cdcCtx->channels;
     
     return true;
 }
@@ -65,14 +69,12 @@ bool streamInit::init()
 void streamInit::dump() const
 {
     std::cout << "File name: " << inputFile << std::endl;
-    std::cout << "No. of streams in clip: " << fmtCtx->nb_streams << std::endl;
+    std::cout << "No. of streams in clip: " << numStreams << std::endl;
     std::cout << "Number of channels in the audio stream: " 
-              << cdcCtx->channels << std::endl;
+              << numChannels << std::endl;
     std::cout << "Sampling Rate: " << samplingRate << std::endl;
     std::cout << "Samples per channel: " << totalSamples << std::endl;
-    std::string fmt;
-    getSampleFormat(fmt);
-    std::cout << "Sample Format: " << fmt << std::endl;
+    std::cout << "Sample Format: " << smpFmt << std::endl;
 }
 
 /*
@@ -116,63 +118,93 @@ std::uint64_t streamInit::getNumSamplesInStream() const
 }
 
 /* 
- *  returns the audio time base. (inverse of the sampling frequency)
+ *  returns the audio time base. 
  */
 AVRational streamInit::getAudioTimeBase() const
 { 
     return audioTimeBase; 
 }
 
+/*
+ * returns the sampling rate of the audio stream.
+ */
 std::uint32_t streamInit::getSamplingRate() const
 {
     return samplingRate;
 }
 
+/*
+ *  returns the number of channnels in the audio stream.
+ */
+std::uint32_t streamInit::getNumChannels() const
+{
+    return numChannels;
+}
+
+/*
+ *  returns the number of streams in the input clip.
+ */
+std::uint32_t streamInit::getNumStreams() const
+{
+    return numStreams;
+}
+
+/*
+ *  returns the sample format of the audio stream.
+ */
 void streamInit::getSampleFormat(std::string& format) const
+{
+    format = smpFmt;
+}
+
+/*
+ * initializes the sample format from the codec context.
+ */
+void streamInit::extractSampleFormat()
 {
 
     switch (cdcCtx->sample_fmt) {
         case AV_SAMPLE_FMT_NONE :
-            format = "Unknown";
+            smpFmt = "Unknown";
             break;
         case AV_SAMPLE_FMT_U8:
-            format = "Unsigned 8 bit packed";
+            smpFmt = "Unsigned 8 bit packed";
             break;
         case AV_SAMPLE_FMT_U8P:
-            format = "Unsigned 8 bit planar";
+            smpFmt = "Unsigned 8 bit planar";
             break;
         case AV_SAMPLE_FMT_S16:
-            format = "Signed 16 bit packed";
+            smpFmt = "Signed 16 bit packed";
             break;
         case AV_SAMPLE_FMT_S16P:
-            format = "Signed 16 bit planar";
+            smpFmt = "Signed 16 bit planar";
             break;
         case AV_SAMPLE_FMT_S32:
-            format = "Signed 32 bit packed";
+            smpFmt = "Signed 32 bit packed";
             break;
         case AV_SAMPLE_FMT_S32P:
-            format = "Signed 32 bit planar";
+            smpFmt = "Signed 32 bit planar";
             break;
         case AV_SAMPLE_FMT_FLT:
-            format = "Floating point packed";
+            smpFmt = "Floating point packed";
             break;
         case AV_SAMPLE_FMT_FLTP:
-            format = "Floating point planar";
+            smpFmt = "Floating point planar";
             break;
         case AV_SAMPLE_FMT_DBL:
-            format = "Double precision packed";
+            smpFmt = "Double precision packed";
             break;
         case AV_SAMPLE_FMT_DBLP:
-            format = "Double precision planar";
+            smpFmt = "Double precision planar";
             break;
         case AV_SAMPLE_FMT_S64:
-            format = "Signed 64 bit packed";
+            smpFmt = "Signed 64 bit packed";
             break;
         case AV_SAMPLE_FMT_S64P:
-            format = "Signed 64 bit planar";
+            smpFmt = "Signed 64 bit planar";
             break;
         default:
-            format = "Unknown";
+            smpFmt = "Unknown";
             break;
     }
 }
