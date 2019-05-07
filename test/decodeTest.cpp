@@ -4,11 +4,8 @@
 #include "reader.h"
 //#include ffmpeg includes.
 
-
-/* 
- * Entry point for the program. Takes in a file name and 
- * writes to the audio stream to the default device.
-*/
+/*Reader.cpp has memory leaks according to valgrind*/
+/* To Be investigated. */
 
 bool initializeOutputContexts(const char* outFile,
                               const AVFormatContext* inputFormatContext,
@@ -16,6 +13,13 @@ bool initializeOutputContexts(const char* outFile,
                               std::uint32_t inputAudioIndex,
                               AVFormatContext** outputFormatContext,
                               AVCodecContext** outputCodecContext);
+
+void encodeOutputFile(lockedQ<AVFrame*>& frQ, AVCodecContext* codecCtx,
+                      AVFormatContext* fmtCtx);
+
+void generateOutputFileName(const std::string& inFile, 
+                            std::string& outFile);
+void compareStreamStats(streamInit& str1, streamInit& str2);
 void usage(const char* progName);
 
 int main(int argc, char *argv[])
@@ -33,22 +37,29 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    std::string outFile = "out." + fileName;
+    generateOutputFileName(fileName, outFile);
+    if (outFile == "") {
+        std::cout << "Input file is invalid" << std::endl;
+        return -1;
+    }
+
     AVFormatContext *formatContext = inputStream.getFormatContext();
     AVCodecContext* audioContext = inputStream.getCodecContext();
     std::uint32_t audioIndex = inputStream.getAudioStreamIndex();
-    std::string outFile = "out." + fileName;
+
     AVFormatContext* outputFormatCtx;
     AVCodecContext* outputCodecCtx;
     if (initializeOutputContexts(outFile.c_str(), formatContext, audioContext, 
                   audioIndex, &outputFormatCtx, &outputCodecCtx) == false) {
         std::cout << "Error initializing output contexts.." << std::endl;   
-        //CLOSE
         return -1;
     }
 
     if (avformat_write_header(outputFormatCtx, nullptr) < 0) {
         std::cout << "Cannot write header" << std::endl;
-        //CLOSE
+        avio_closep(&outputFormatCtx->pb);
+        avformat_free_context(outputFormatCtx);
         return -1;
     }
 
@@ -56,30 +67,7 @@ int main(int argc, char *argv[])
     reader rt(frameQ, audioIndex, formatContext, audioContext);
     rt.startThread();
     rt.joinThread();
-    
-    int serial = 0;
-    while (frameQ.terminateOutput() == false) {
-        AVFrame* fr = frameQ.deQueue();
-        int frameRC;
-        if ((frameRC = avcodec_send_frame(outputCodecCtx, fr)) == 0) {
-            AVPacket pkt;
-            av_init_packet(&pkt);
-            pkt.data = nullptr;
-            pkt.size = 0;
-            while (avcodec_receive_packet(outputCodecCtx, &pkt) == 0) {
-                int rc = av_write_frame(outputFormatCtx, &pkt);
-                if (rc < 0) 
-                    std::cout << "Error writing frame" << std::endl;
-                av_write_frame(outputFormatCtx, nullptr);
-            }
-        }
-        if (frameRC != 0) {
-            char errBuf[32];
-            av_strerror(frameRC, errBuf, 32);
-            std::cout << "Frame RC " << errBuf << std::endl;
-        }
-        av_frame_unref(fr);
-    }
+    encodeOutputFile(frameQ, outputCodecCtx, outputFormatCtx);
 
     avio_closep(&outputFormatCtx->pb);
     avformat_free_context(outputFormatCtx);
@@ -90,29 +78,67 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    inputStream.dump();
-    outputStream.dump();
-    std::string inputSampleFormat;
-    inputStream.getSampleFormat(inputSampleFormat);
-    std::string outputSampleFormat;
-    outputStream.getSampleFormat(outputSampleFormat);
+    compareStreamStats(inputStream, outputStream);
+}
+ 
+void generateOutputFileName(const std::string& inFile, std::string& outFile)
+{
+    outFile = "";
+    size_t exPos = inFile.rfind('.');
+    if (exPos == std::string::npos)
+        return;
 
-    if ((inputStream.getNumChannels() == outputStream.getNumChannels()) &&
-        (inputStream.getSamplingRate() == inputStream.getSamplingRate()) &&
-        (inputSampleFormat == outputSampleFormat) &&
-        (inputStream.getNumSamplesInStream() == 
-                                    outputStream.getNumSamplesInStream()))
+    if (inFile.substr(exPos, inFile.size()) != ".wav") 
+        return;
+    
+    outFile = inFile.substr(0, exPos) + ".out.wav";
+}
+
+void encodeOutputFile(lockedQ<AVFrame*>& frQ, AVCodecContext* codecCtx,
+                      AVFormatContext* fmtCtx)
+{
+    while (frQ.terminateOutput() == false) {
+        AVFrame* fr = frQ.deQueue();
+        int frameRC;
+        if ((frameRC = avcodec_send_frame(codecCtx, fr)) == 0) {
+            AVPacket pkt;
+            av_init_packet(&pkt);
+            pkt.data = nullptr;
+            pkt.size = 0;
+            while (avcodec_receive_packet(codecCtx, &pkt) == 0) {
+                int rc = av_write_frame(fmtCtx, &pkt);
+                if (rc < 0) 
+                    std::cout << "Error writing frame" << std::endl;
+                av_write_frame(fmtCtx, nullptr);
+            }
+        }
+        if (frameRC != 0) {
+            char errBuf[32];
+            av_strerror(frameRC, errBuf, 32);
+            std::cout << "Frame RC " << errBuf << std::endl;
+        }
+        av_frame_unref(fr);
+    }
+}
+
+void compareStreamStats(streamInit& str1, streamInit& str2)
+{
+    str1.dump();
+    str2.dump();
+    
+    std::string sampleFormat1;
+    str1.getSampleFormat(sampleFormat1);
+    std::string sampleFormat2;
+    str2.getSampleFormat(sampleFormat2);
+    
+    if ((str1.getNumChannels() == str2.getNumChannels()) &&
+        (str1.getSamplingRate() == str2.getSamplingRate()) &&
+        (sampleFormat1 == sampleFormat2) &&
+        (str1.getNumSamplesInStream() == str2.getNumSamplesInStream()))
             std::cout << "Test passed" << std::endl;
         else
             std::cout << "Test failed" << std::endl;
 }
-    
-
-void usage(const char* progName)
-{
-    std::cout << "Usage: " << progName << " <fileName> "<< std::endl;
-}
-
 
 bool initializeOutputContexts(const char* outFile,
                               const AVFormatContext* inputFormatContext,
@@ -173,10 +199,6 @@ bool initializeOutputContexts(const char* outFile,
                      inputFormatContext->streams[inputAudioIndex]->time_base;
     outStream->duration = 
                      inputFormatContext->streams[inputAudioIndex]->duration;
-/*
-    outStream->time_base = inputCodecContext->time_base;
-    outStream->duration = 
-*/
     
     *outputCodecContext = avcodec_alloc_context3(outputCodec);
     if (*outputCodecContext == nullptr) {
@@ -196,7 +218,6 @@ bool initializeOutputContexts(const char* outFile,
         std::cout << "Error opening output codec" << std::endl;
         avio_closep(&(*outputFormatContext)->pb);
         avformat_free_context(*outputFormatContext);
-        //AVCODEC CLOSE
         return false;
     }
     
@@ -205,9 +226,15 @@ bool initializeOutputContexts(const char* outFile,
         std::cout << "Error initializing stream parameters" << std::endl;
         avio_closep(&(*outputFormatContext)->pb);
         avformat_free_context(*outputFormatContext);
-        //AVCODEC CLOSE
         return false;
     }
 
     return true;
 }
+
+void usage(const char* progName)
+{
+    std::cout << "Usage: " << progName << " <WAV file> "<< std::endl;
+    std::cout << "Argument should be a .wav file" << std::endl;
+}
+
