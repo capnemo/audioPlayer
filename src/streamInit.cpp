@@ -42,8 +42,8 @@ bool streamInit::init()
     }
 
     samplingRate = codecPar->sample_rate;
-    totalSamples = (fmtCtx->streams[audioIndex]->duration * audioTimeBase.num * 
-                    samplingRate) / audioTimeBase.den;
+    totalSamples = (fmtCtx->streams[audioIndex]->duration * 
+                    audioTimeBase.num * samplingRate) / audioTimeBase.den;
     
     cdcCtx = avcodec_alloc_context3(audioCodec);
     avcodec_parameters_to_context(cdcCtx, codecPar);
@@ -56,9 +56,9 @@ bool streamInit::init()
         return false;
     }
     
-    numChannels = fmtCtx->nb_streams;
-    numStreams = cdcCtx->channels;
-    
+    numChannels = cdcCtx->channels;
+    numStreams = fmtCtx->nb_streams;
+
     return true;
 }
 

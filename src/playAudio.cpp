@@ -71,7 +71,6 @@ int main(int argc, char *argv[])
     rt.startThread();
     at.startThread();
 
-    sleep(2);
     at.joinThread();
     rt.joinThread();
 
