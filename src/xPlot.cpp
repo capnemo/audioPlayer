@@ -8,38 +8,24 @@
  * Initialize the xPlot object. Sets up the connection to the XServer and 
  * starts the graphing window. 
  */
-bool xPlot::init()
-{
-    if (inputFormat != plotFormat) {
-        bool rc = true;
-        resampler = new audioResampler(codecCtx, inputFormat, plotFormat);
-        if (resampler == nullptr) 
-            rc = false;
-        if (resampler->init() == false) {
-            delete resampler;
-            resampler = nullptr;
-            rc = false;
-        }
-        if (rc == false) {
-            std::cout << "Error allocating plotter" << std::endl;
-            return rc;
-        }
-    }
 
+bool xPlot::initX() 
+{
     numChannels = codecCtx->channels;
     if ((display = XOpenDisplay(0)) == 0)  {
-        std::cout << "Error opening connection to the X server" << std::endl;
+        std::cout << "Error connecting to the X server" << std::endl;
         return false;
     }
     
     screen = DefaultScreen(display);
     Colormap screenColorMap = DefaultColormap(display, screen);
-    std::vector<std::string> colors = {"red","blue","green","yellow","white"};
+    std::vector<std::string> colors = {"red","blue","green","yellow",
+                                       "white"};
 
     for (auto col:colors) {
         XColor sCol;
-        int rc = XAllocNamedColor(display, screenColorMap, col.c_str(), &sCol, 
-                                  &sCol);
+        int rc = XAllocNamedColor(display, screenColorMap, col.c_str(), 
+                                  &sCol, &sCol);
         if (rc != 0) 
             lineColors.push_back(sCol.pixel);
     }
@@ -105,58 +91,13 @@ void xPlot::drawAxes() const
               xAxisEnd, yAxisEnd);
 
     int interval = 100;
-    for (int i = xAxisBegin + interval; i < xAxisEnd; i += interval) {
+    for (std::uint32_t i = xAxisBegin + interval; i < xAxisEnd; 
+                                                    i += interval) {
         XDrawLine(display, window, graphicsContext, i, yAxisEnd, 
                   i, yAxisEnd + 5);
     }
     
     XFlush(display);
-}
-
-/* 
- * Class entry point. Plots the data in a frame. Calls the resampler 
- * if necessary.
- * IN: inFrame. Audio frame. Data to be graphed is in AVFrame->data
- */
-
-void xPlot::plotData(const AVFrame* inFrame)
-{
-    if (resampler != nullptr) {
-        AVFrame plotFrame;
-        bzero((void *)&plotFrame, sizeof(AVFrame));
-        if (resampler->resampleFrame(inFrame, &plotFrame) == true)  {
-            appendData(&plotFrame);
-            av_frame_unref(&plotFrame);
-            while (resampler->flushable() == true) {
-                bzero((void *)&plotFrame, sizeof(AVFrame));
-                resampler->resampleFrame(nullptr, &plotFrame);
-                appendData(&plotFrame);
-                av_frame_unref(&plotFrame);
-            }
-        } else  {
-            std::cout << "Plot resample fail" << std::endl;
-            return;
-        }
-    } else {
-        appendData(inFrame);
-    }
-}
-
-/* Appends data to the coordinate vectors and calls the plotting function.
- * IN: inFrame. Audio frame. Data to be graphed is in AVFrame->data
- */
-void xPlot::appendData(const AVFrame* inFrame)
-{
-    short* dataPtr = (short *)(inFrame->data[0]);
-    for (int i = 0; i < inFrame->nb_samples * numChannels; i++) {
-        planarData[i%numChannels].push_back(dataPtr[i]);
-        if (planarData[i%numChannels].size() == samplesPerPoint) {
-            int avg = maxAggregate(planarData[i%numChannels]);
-            int y = yRange/2 - (avg * yRange)/dataRange;
-            plotLine(i%numChannels, y);
-            planarData[i%numChannels].clear();
-        }
-    }
 }
 
 /*
@@ -183,7 +124,7 @@ std::int16_t xPlot::maxAggregate(const std::vector<std::int16_t>& input) const
 {
     std::int16_t max = std::abs(input[0]);
     int index = 0;
-    for (int i = 0; i < input.size(); i++) {
+    for (std::uint32_t i = 0; i < input.size(); i++) {
         if (max < std::abs(input[i])) {
             index = i;
             max = std::abs(input[i]);
@@ -218,7 +159,7 @@ int xPlot::avgUnique(const std::vector<short>& input)
 void xPlot::removeDuplicates(std::vector<int>& inVec)
 {
     std::vector<int> tmp;
-    int i = 0;
+    std::uint32_t i = 0;
     while (i < inVec.size()) {
         tmp.push_back(inVec[i]);
         while ((tmp[tmp.size() - 1] == inVec[i]) && (i < inVec.size()))
@@ -232,9 +173,6 @@ void xPlot::removeDuplicates(std::vector<int>& inVec)
  */
 xPlot::~xPlot()
 {
-    if (resampler != nullptr)
-        delete resampler;
- 
     XFreeGC(display, graphicsContext);   
     XDestroyWindow(display, window);
     XCloseDisplay(display);   

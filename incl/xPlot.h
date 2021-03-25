@@ -14,25 +14,34 @@
 #ifndef XPLOT_H
 #define XPLOT_H
 
-class xPlot{
+class xPlot {
 public:
-    xPlot(AVCodecContext* cT, AVSampleFormat iF, std::uint64_t tS, 
-          std::uint32_t sR):
+    xPlot(AVCodecContext* cT, AVSampleFormat iF, std::uint64_t tS):
           codecCtx(cT), inputFormat(iF), totalSamples(tS), 
-          samplingRate(sR) {}
+          samplingRate(cT->sample_rate) {}
+    xPlot() {}
+    virtual bool init() = 0;
+    virtual void plotData(const AVFrame* inFrame) = 0;
+    virtual ~xPlot();
 
-    bool init();
-    void plotData(const AVFrame* inFrame);
-    ~xPlot();
-
-private:
+protected:
+    bool initX();
     void drawAxes() const;
     void plotLine(std::uint32_t channel, std::int32_t currentY);
     void removeDuplicates(std::vector<std::int32_t>& inVec);
     std::int16_t maxAggregate(const std::vector<std::int16_t>& input) const;
-    void plotStream();
-    void appendData(const AVFrame* inFrame);
 
+protected:
+    const AVCodecContext* codecCtx; //in constructor
+    AVSampleFormat inputFormat; //in constructor
+    std::uint64_t totalSamples; //in constructor
+    std::uint32_t samplingRate; //in constructor
+    std::uint32_t numChannels; //in xPlot constructor
+    std::uint32_t samplesPerPoint;
+    std::vector<std::vector<std::int16_t>> planarData;
+    std::uint32_t yRange, xRange;
+    std::uint32_t dataRange;
+    
 private:
     Display *display = 0;
     std::int32_t screen;        
@@ -41,21 +50,10 @@ private:
     XGCValues gcValues;
     std::uint32_t xAxisBegin, xAxisEnd;
     std::uint32_t yAxisBegin, yAxisEnd;
-    std::uint32_t yRange, xRange;
     std::uint32_t currentXPos = 0;
-    std::uint32_t numChannels;
-    std::uint32_t samplesPerPoint;
-    std::uint32_t dataRange;
     std::vector<short> xCoord;
     std::vector<short> yCoord;
-    audioResampler* resampler = nullptr;
     std::vector<long> lineColors;
-    const AVCodecContext* codecCtx;
-    AVSampleFormat inputFormat;
-    AVSampleFormat plotFormat = AV_SAMPLE_FMT_S16;
-    std::uint64_t totalSamples;
-    std::uint32_t samplingRate;
-    std::vector<std::vector<std::int16_t>> planarData;
     std::vector<std::vector<std::int16_t>> points;
 };
 

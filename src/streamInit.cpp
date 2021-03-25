@@ -20,7 +20,7 @@ bool streamInit::init()
         return false;
     }
 
-    for (int i = 0; i < fmtCtx->nb_streams; i++) {
+    for (std::uint32_t i = 0; i < fmtCtx->nb_streams; i++) {
         if (fmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             audioTimeBase = fmtCtx->streams[i]->time_base;
             audioIndex = i;

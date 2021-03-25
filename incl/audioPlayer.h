@@ -19,18 +19,19 @@ extern "C" {
 #include "threadRunner.h"
 #include "lockedQ.h"
 #include "audioResampler.h"
-#include "xPlot.h"
+#include "conPlot.h"
 
 #ifndef AUDIOPLAYER_H
 #define AUDIOPLAYER_H
 
 using stdClock = std::chrono::high_resolution_clock;
+
 class audioPlayer:public threadRunner {
 public:
     audioPlayer(AVCodecContext* cdcCtx, int64_t tS, std::uint32_t sR,
                 lockedQ<AVFrame*>& fSrc, bool pL = false):
                 audioCodecCtx(cdcCtx), plot(pL), totalSamples(tS), 
-                samplingRate(sR), frameSource(fSrc) {}
+                frameSource(fSrc) {}
 
     audioPlayer(const audioPlayer&) = delete;
     audioPlayer& operator = (const audioPlayer&) = delete;
@@ -47,7 +48,7 @@ private:
     AVCodecContext* audioCodecCtx;
     audioResampler* planarResampler = 0;
     SwrContext* plotResCtx = 0;
-    xPlot* plotter = 0;
+    conPlot* plotter = 0;
     bool plot;
     std::uint64_t totalSamples;
     std::uint32_t samplingRate;

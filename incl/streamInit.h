@@ -39,7 +39,7 @@ class streamInit {
     private:
     const char* inputFile;
     AVFormatContext* fmtCtx = 0;
-    std::uint32_t audioIndex = -1;
+    std::int32_t audioIndex = -1;
     std::uint32_t samplingRate;
     std::uint64_t totalSamples = 0;
     std::uint32_t numChannels = 0;

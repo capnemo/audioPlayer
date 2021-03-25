@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     std::string dumpArg = "-dump";
     bool plot = false;
     bool dump = false;
-    std::uint32_t argsProcessed = 0;
+    int argsProcessed = 0;
     for (int i = 1; i < argc; i++) {
         if (argv[i] == plotArg)  {
             plot = true;

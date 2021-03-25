@@ -78,8 +78,7 @@ bool audioPlayer::init()
     }
     
     if (plot == true) {
-        plotter = new xPlot(audioCodecCtx, outputSampleFormat, 
-                            totalSamples, samplingRate);
+        plotter = new conPlot(audioCodecCtx, outputSampleFormat, totalSamples);
         if ((plotter != 0) && (plotter->init() == false))  {
             plot = false;
             delete plotter;
