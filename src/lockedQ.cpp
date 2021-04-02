@@ -1,7 +1,9 @@
 #include <iostream>
-
 #include "lockedQ.h"
-#include "streamInit.h"
+
+extern "C" {
+#include <libavformat/avformat.h>
+}
 
 /*
  *  Function to assert that the input is complete
@@ -62,6 +64,7 @@ bool lockedQ<T>::terminateOutput()
 /*
  *  print the number of object that have entered and exited the queue.
  */
+//Remove printfs.
 template <typename T>
 void lockedQ<T>::printStats() const
 {

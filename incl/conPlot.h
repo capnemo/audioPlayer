@@ -19,7 +19,7 @@ class conPlot: public xPlot {
 public:
     conPlot(AVCodecContext* cT, AVSampleFormat iF, std::uint64_t tS):
             codecCtx(cT), inputFormat(iF), totalSamples(tS),
-            samplingRate(cT->sample_rate), numChannels(codecCtx->channels) {}
+            numChannels(codecCtx->channels) {}
 
     virtual bool init() override;
     virtual void plotData(const AVFrame* inFrame) override;
@@ -39,7 +39,6 @@ public:
     const AVCodecContext* codecCtx; 
     AVSampleFormat inputFormat; 
     std::uint64_t totalSamples; 
-    std::uint32_t samplingRate; 
     std::uint32_t numChannels;
 
     const AVSampleFormat plotFormat = AV_SAMPLE_FMT_S16;

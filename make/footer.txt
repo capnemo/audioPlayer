@@ -1,0 +1,5 @@
+playAudio:$(objs)
+	$(CC) $(objs) $(libs) -o playAudio
+
+clean:
+	rm -f playAudio $(objs)

@@ -51,7 +51,6 @@ private:
     conPlot* plotter = 0;
     bool plot;
     std::uint64_t totalSamples;
-    std::uint32_t samplingRate;
     AVSampleFormat inputSampleFormat, outputSampleFormat;
     stdClock::time_point beginClock, endClock;
     lockedQ<AVFrame*>& frameSource;
