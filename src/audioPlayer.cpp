@@ -68,7 +68,7 @@ bool audioPlayer::init()
     if (audioFormat == SND_PCM_FORMAT_UNKNOWN)
         return  false; 
 
-    formatDivisor *= audioCodecCtx->channels;
+    formatDivisor *= audioCodecCtx->ch_layout.nb_channels;
     if (inputSampleFormat != outputSampleFormat)  {
         planarResampler = new audioResampler(audioCodecCtx, 
                                              inputSampleFormat,
@@ -95,7 +95,7 @@ bool audioPlayer::init()
     int err;
     err = snd_pcm_set_params(playbackHandle, audioFormat,
                              SND_PCM_ACCESS_RW_INTERLEAVED,
-                             audioCodecCtx->channels,
+                             audioCodecCtx->ch_layout.nb_channels,
                              audioCodecCtx->sample_rate, 0, 500000);
     if (err < 0)
         return false;
@@ -117,7 +117,8 @@ void audioPlayer::threadFunc()
         AVFrame *frame = frameSource.deQueue();
         if (frame == 0)
             continue;
-        int dataSz = av_samples_get_buffer_size(0, audioCodecCtx->channels, 
+
+        int dataSz = av_samples_get_buffer_size(0, audioCodecCtx->ch_layout.nb_channels, 
                                                 frame->nb_samples, 
                                                 audioCodecCtx->sample_fmt, 
                                                 1);

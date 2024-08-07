@@ -28,7 +28,7 @@ class audioResampler {
     const AVCodecContext* codecContext;
     AVSampleFormat inputFormat, outputFormat;
     SwrContext* resampleContext = 0;
-    std::uint32_t channelLayout;
+    AVChannelLayout channel_layout;
 };
 
 #endif /* AUDIORESAMPLER_H */

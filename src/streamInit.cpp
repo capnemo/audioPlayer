@@ -20,7 +20,7 @@ bool streamInit::init()
         return false;
     }
 
-    for (std::uint32_t i = 0; i < fmtCtx->nb_streams; i++) {
+    for (uint32_t i = 0; i < fmtCtx->nb_streams; i++) {
         if (fmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             audioTimeBase = fmtCtx->streams[i]->time_base;
             audioIndex = i;
@@ -35,7 +35,7 @@ bool streamInit::init()
 
     audioStream = fmtCtx->streams[audioIndex];
     codecPar = fmtCtx->streams[audioIndex]->codecpar;
-    audioCodec = avcodec_find_decoder(codecPar->codec_id);
+    audioCodec = (AVCodec *)avcodec_find_decoder(codecPar->codec_id);
     if (audioCodec == 0) {
         std::cout << "Error finding the audio codec" << std::endl;
         return false;
@@ -56,7 +56,8 @@ bool streamInit::init()
         return false;
     }
     
-    numChannels = cdcCtx->channels;
+    numChannels = cdcCtx->ch_layout.nb_channels;
+    //numChannels = cdcCtx->channels;
     numStreams = fmtCtx->nb_streams;
 
     return true;
@@ -88,7 +89,7 @@ AVFormatContext* streamInit::getFormatContext() const
 /*
  *  returns the index of the audio stream from the demuxer.
  */
-std::uint32_t streamInit::getAudioStreamIndex() const
+uint32_t streamInit::getAudioStreamIndex() const
 {
     return audioIndex;
 }
@@ -112,7 +113,7 @@ AVCodecContext* streamInit::getCodecContext() const
 /* 
  *  returns the total number of samples in the audio clip
  */
-std::uint64_t streamInit::getNumSamplesInStream() const
+uint64_t streamInit::getNumSamplesInStream() const
 {
     return totalSamples;
 }
@@ -128,7 +129,7 @@ AVRational streamInit::getAudioTimeBase() const
 /*
  * returns the sampling rate of the audio stream.
  */
-std::uint32_t streamInit::getSamplingRate() const
+uint32_t streamInit::getSamplingRate() const
 {
     return samplingRate;
 }
@@ -136,7 +137,7 @@ std::uint32_t streamInit::getSamplingRate() const
 /*
  *  returns the number of channnels in the audio stream.
  */
-std::uint32_t streamInit::getNumChannels() const
+uint32_t streamInit::getNumChannels() const
 {
     return numChannels;
 }
@@ -144,7 +145,7 @@ std::uint32_t streamInit::getNumChannels() const
 /*
  *  returns the number of streams in the input clip.
  */
-std::uint32_t streamInit::getNumStreams() const
+uint32_t streamInit::getNumStreams() const
 {
     return numStreams;
 }
@@ -215,7 +216,7 @@ void streamInit::extractSampleFormat()
  */
 streamInit::~streamInit()
 {   
-    avcodec_close(cdcCtx);
+    //avcodec_close(cdcCtx);
     avcodec_free_context(&cdcCtx);
     avformat_close_input(&fmtCtx);
 }

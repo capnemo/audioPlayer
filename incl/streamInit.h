@@ -22,14 +22,14 @@ class streamInit {
     bool init();
     void dump() const;
     AVFormatContext* getFormatContext() const;
-    std::uint32_t getAudioStreamIndex() const;
+    uint32_t getAudioStreamIndex() const;
     AVCodec* getCodec() const;
     AVCodecContext* getCodecContext() const;
     AVRational getAudioTimeBase() const; 
-    std::uint64_t getNumSamplesInStream() const;
-    std::uint32_t getSamplingRate() const;
-    std::uint32_t getNumChannels() const;
-    std::uint32_t getNumStreams() const;
+    uint64_t getNumSamplesInStream() const;
+    uint32_t getSamplingRate() const;
+    uint32_t getNumChannels() const;
+    uint32_t getNumStreams() const;
     void getSampleFormat(std::string& format) const;
     ~streamInit();
 
@@ -39,11 +39,11 @@ class streamInit {
     private:
     const char* inputFile;
     AVFormatContext* fmtCtx = 0;
-    std::int32_t audioIndex = -1;
-    std::uint32_t samplingRate;
-    std::uint64_t totalSamples = 0;
-    std::uint32_t numChannels = 0;
-    std::uint32_t numStreams = 0;
+    int32_t audioIndex = -1;
+    uint32_t samplingRate;
+    uint64_t totalSamples = 0;
+    uint32_t numChannels = 0;
+    uint32_t numStreams = 0;
     std::string smpFmt = "";
     AVCodecParameters* codecPar = 0;
     AVCodec* audioCodec = 0;

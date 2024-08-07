@@ -3,20 +3,18 @@
 
 bool audioResampler::init()
 {
-    channelLayout = codecContext->channel_layout;
-    if (channelLayout == 0) 
-        channelLayout = av_get_channel_layout_nb_channels(codecContext->channels);
+    channel_layout = codecContext->ch_layout;
 
-    resampleContext = swr_alloc_set_opts(nullptr, 
-                                         channelLayout,
-                                         outputFormat, 
-                                         codecContext->sample_rate,
-                                         channelLayout,
-                                         inputFormat,
-                                         codecContext->sample_rate, 0, 0);
+    int rc = swr_alloc_set_opts2(&resampleContext, 
+                                 &channel_layout,
+                                 outputFormat, 
+                                 codecContext->sample_rate,
+                                 &channel_layout,
+                                 inputFormat,
+                                 codecContext->sample_rate, 0, 0);
 
     
-    if (resampleContext == 0) 
+    if (rc != 0) 
         return false;
 
     if (swr_init(resampleContext) != 0)
@@ -29,8 +27,8 @@ bool audioResampler::resampleFrame(const AVFrame* inputFrame,
                                    AVFrame* outputFrame)
 {
     outputFrame->format = outputFormat;
-    outputFrame->channel_layout = codecContext->channel_layout;
-    //outputFrame->channel_layout = channelLayout;
+    outputFrame->ch_layout = channel_layout;
+    
     outputFrame->sample_rate = codecContext->sample_rate;
 
     int cRc = swr_convert_frame(resampleContext, outputFrame, inputFrame);
@@ -53,7 +51,7 @@ bool audioResampler::flushable()
 void* audioResampler::resampleData(const AVFrame* inputFrame)
 {
     uint8_t *outData;
-    if (av_samples_alloc(&outData, 0, codecContext->channels,
+    if (av_samples_alloc(&outData, 0, codecContext->ch_layout.nb_channels,
                            inputFrame->nb_samples, 
                            codecContext->sample_fmt, 0) < 0) {
         std::cout << "Error allocating resampling frame" << std::endl;
