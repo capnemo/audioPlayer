@@ -16,7 +16,7 @@ After the code is built.
 
 Dependencies
 ------------
-* FFmpeg version 4.0 or later.  
+* FFmpeg version 7.0 or later.  
 * libasound version 1.1.0 or later.  
 * Clang ver 7.  
 * Developed and tested on Ubuntu 18.10  
