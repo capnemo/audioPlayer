@@ -3,7 +3,7 @@
 #CC=clang++ -fsanitize=address -ggdb -std=c++11 -Wall
 #CC=clang++ -ggdb -Iincl -std=c++11 -Wall
 #CC=clang++ -ggdb -Iincl -std=c++11 -Wall
-CC=clang++ -Wall -Iincl -Wall
+CC=clang++ -Wall -Iincl
 
 objs=src/streamInit.o src/playAudio.o src/reader.o src/audioPlayer.o src/xPlot.o src/lockedQ.o src/audioResampler.o src/conPlot.o
 srcs=src/audioPlayer.cpp src/lockedQ.cpp src/playAudio.cpp src/reader.cpp src/streamInit.cpp src/xPlot.cpp src/audioResampler.cpp src/conPlot.cpp
